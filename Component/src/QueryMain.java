@@ -42,7 +42,7 @@ public class QueryMain{
         String resultfile = args[1];
         FileInputStream source = null;
         try{
-           source = new FileInputStream(queryfile);
+            source = new FileInputStream(queryfile);
         } catch (FileNotFoundException ff){
             System.out.println("File not found: "+queryfile);
             System.exit(1);
@@ -83,12 +83,12 @@ public class QueryMain{
             System.out.println("enter the number of buffers available");
     
             try {
-            temp = in.readLine();
-            int numBuff = Integer.parseInt(temp);
-            BufferManager bm = new BufferManager(numBuff,numJoin);
+                temp = in.readLine();
+                int numBuff = Integer.parseInt(temp);
+                BufferManager bm = new BufferManager(numBuff,numJoin);
             } catch (Exception e) {
-            e.printStackTrace();
-         }
+                e.printStackTrace();
+            }
         }
     
     
@@ -185,7 +185,7 @@ public class QueryMain{
     
         while((resultbatch=root.next())!=null){
             for(int i=0;i<resultbatch.size();i++){
-            printTuple(resultbatch.elementAt(i));
+                printTuple(resultbatch.elementAt(i));
             }
         }
         root.close();
@@ -194,25 +194,24 @@ public class QueryMain{
         long endtime = System.currentTimeMillis();
         double executiontime = (endtime - starttime)/1000.0;
         System.out.println("Execution time = "+ executiontime);
-        
-        }
+    }
     
     
-        protected static void printTuple(Tuple t){
+    protected static void printTuple(Tuple t){
         for(int i=0;i<numAtts;i++){
             Object data = t.dataAt(i);
             if(data instanceof Integer){
-               out.print(((Integer)data).intValue()+"\t");
+                out.print(((Integer)data).intValue()+"\t");
             }else if(data instanceof Float){
-            out.print(((Float)data).floatValue()+"\t");
+                out.print(((Float)data).floatValue()+"\t");
             }else{
-            out.print(data +"\t");
+                out.print(data +"\t");
             }
         }
         out.println();
-        }
+    }
     
-        protected static void printSchema(Schema schema){
+    protected static void printSchema(Schema schema){
         for(int i=0;i<numAtts;i++){
             Attribute attr = schema.getAttribute(i);
             out.print(attr.getTabName()+"."+attr.getColName()+"  ");
