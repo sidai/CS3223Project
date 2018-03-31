@@ -1,5 +1,5 @@
 /**
- * page nested join algorithm
+ * block nested join algorithm
  **/
 
 package qp.operators;
@@ -7,17 +7,13 @@ package qp.operators;
 import qp.utils.*;
 
 import java.io.*;
-import java.util.*;
-import java.lang.*;
+import java.util.Vector;
 
-public class NestedJoin extends Join {
-    
-    
+
+public class BlockNestedJoin extends Join {
     int batchsize;  //Number of tuples per out batch
-    
-    /** The following fields are useful during execution of
-     ** the NestedJoin operation
-     **/
+    int blocksize;  // number of batches per block
+
     int leftindex;     // Index of the join attribute in left table
     int rightindex;    // Index of the join attribute in right table
     
@@ -27,6 +23,8 @@ public class NestedJoin extends Join {
     
     Batch outbatch;   // Output buffer
     Batch leftbatch;  // Buffer for left input stream
+    Block leftblock;
+    
     Batch rightbatch;  // Buffer for right input stream
     ObjectInputStream in; // File pointer to the right hand materialized file
     
@@ -35,7 +33,7 @@ public class NestedJoin extends Join {
     boolean eosl;  // Whether end of stream (left table) is reached
     boolean eosr;  // End of stream (right table)
     
-    public NestedJoin(Join jn) {
+    public BlockNestedJoin(Join jn) {
         super(jn.getLeft(), jn.getRight(), jn.getCondition(), jn.getOpType());
         schema = jn.getSchema();
         jointype = jn.getJoinType();
@@ -54,6 +52,7 @@ public class NestedJoin extends Join {
         /** select number of tuples per batch **/
         int tuplesize = schema.getTupleSize();
         batchsize = Batch.getPageSize() / tuplesize;
+        blocksize = numBuff - 2;
         
         Attribute leftattr = con.getLhs();
         Attribute rightattr = (Attribute) con.getRhs();
@@ -122,17 +121,25 @@ public class NestedJoin extends Join {
         }
         outbatch = new Batch(batchsize);
         
-        
         while (!outbatch.isFull()) {
-            
             if (lcurs == 0 && eosr == true) {
-                /** new left page is to be fetched**/
-                leftbatch = (Batch) left.next();
-                if (leftbatch == null) {
+                /** new left block is to be fetched**/
+                leftblock = new Block(blocksize, batchsize);
+                
+                while(!eosl && !leftblock.isFull()) {
+                    leftbatch = (Batch) left.next();
+                    if(leftbatch != null) {
+                        leftblock.addBatch(leftbatch);
+                    } else {
+                        break;
+                    }
+                }
+                
+                if (leftblock.isEmpty()) {
                     eosl = true;
                     return outbatch;
                 }
-                /** Whenver a new left page came , we have to start the
+                /** Whenever a new left block came, we have to start the
                  ** scanning of right table
                  **/
                 try {
@@ -153,9 +160,9 @@ public class NestedJoin extends Join {
                         rightbatch = (Batch) in.readObject();
                     }
                     
-                    for (i = lcurs; i < leftbatch.size(); i++) {
+                    for (i = lcurs; i < leftblock.getTupleSize(); i++) {
                         for (j = rcurs; j < rightbatch.size(); j++) {
-                            Tuple lefttuple = leftbatch.elementAt(i);
+                            Tuple lefttuple = leftblock.getTuple(i);
                             Tuple righttuple = rightbatch.elementAt(j);
                             if (lefttuple.checkJoin(righttuple, leftindex, rightindex)) {
                                 Tuple outtuple = lefttuple.joinWith(righttuple);
@@ -164,14 +171,13 @@ public class NestedJoin extends Join {
                                 //System.out.println();
                                 outbatch.add(outtuple);
                                 if (outbatch.isFull()) {
-                                    if (i == leftbatch.size() - 1 && j == rightbatch.size() - 1) {//case 1
+                                    if (i == leftblock.getTupleSize() - 1 && j == rightbatch.size() - 1) {//case 1
                                         lcurs = 0;
                                         rcurs = 0;
-                                    } else if (i != leftbatch.size() - 1 && j == rightbatch.size() - 1) {//case 2
+                                    } else if (i != leftblock.getTupleSize() - 1 && j == rightbatch.size() - 1) {//case 2
                                         lcurs = i + 1;
                                         rcurs = 0;
-                                    } else if (i == leftbatch.size() - 1 && j != rightbatch.size() - 1) {//case 3
-                                        // to keep the last state, next time calling next() will go to this location directly
+                                    } else if (i == leftblock.getTupleSize() - 1 && j != rightbatch.size() - 1) {//case 3
                                         lcurs = i;
                                         rcurs = j + 1;
                                     } else {
@@ -213,49 +219,4 @@ public class NestedJoin extends Join {
         return true;
         
     }
-    
-    
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
