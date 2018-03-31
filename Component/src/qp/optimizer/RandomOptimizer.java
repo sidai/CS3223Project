@@ -71,6 +71,7 @@ public class RandomOptimizer {
         
         RandomInitialPlan rip = new RandomInitialPlan(sqlquery);
         numJoin = rip.getNumJoins();
+        System.out.println("There are " + numJoin);
         
         int MINCOST = Integer.MAX_VALUE;
         Operator finalPlan = null;
@@ -166,7 +167,7 @@ public class RandomOptimizer {
     }
     
     
-    /** Selects a random method choice for join wiht number joinNum
+    /** Selects a random method choice for join with number joinNum
      **  e.g., Nested loop join, Sort-Merge Join, Hash Join etc..,
      ** returns the modified plan
      **/
@@ -178,10 +179,12 @@ public class RandomOptimizer {
             /** find the node that is to be altered **/
             Join node = (Join) findNodeAt(root, joinNum);
             int prevJoinMeth = node.getJoinType();
+            System.out.println("Previous Join method is " + prevJoinMeth);
             int joinMeth = RandNumb.randInt(0, numJMeth - 1);
             while (joinMeth == prevJoinMeth) {
                 joinMeth = RandNumb.randInt(0, numJMeth - 1);
             }
+            System.out.println("Current Join method is " + joinMeth);
             node.setJoinType(joinMeth);
         }
         return root;

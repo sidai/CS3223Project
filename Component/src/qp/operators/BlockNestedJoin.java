@@ -22,7 +22,7 @@ public class BlockNestedJoin extends Join {
     static int filenum = 0;   // To get unique filenum for this operation
     
     Batch outbatch;   // Output buffer
-//    Batch leftbatch;  // Buffer for left input stream
+    Batch leftbatch;  // Buffer for left input stream
     Block leftblock;
     
     Batch rightbatch;  // Buffer for right input stream
@@ -126,10 +126,11 @@ public class BlockNestedJoin extends Join {
             
             if (lcurs == 0 && eosr == true) {
                 /** new left block is to be fetched**/
-//                leftbatch = (Batch) left.next();
+                leftbatch = (Batch) left.next();
                 leftblock = new Block(blocksize);
-                while(left.next() != null && !eosl && !leftblock.isFull()) {
-                    leftblock.addBatch(left.next());
+                while(leftbatch != null && !leftblock.isFull()) {
+                    leftblock.addBatch(leftbatch);
+                    leftbatch = left.next();
                 }
                 
                 if (leftblock.isEmpty()) {
