@@ -118,7 +118,7 @@ public class QueryMain{
     
         /** Use random Optimization algorithm to get a random optimized
             execution plan
-    **/
+        **/
     
         RandomOptimizer ro = new RandomOptimizer(sqlquery);
         Operator logicalroot = ro.getOptimizedPlan();
