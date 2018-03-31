@@ -121,23 +121,25 @@ public class BlockNestedJoin extends Join {
         }
         outbatch = new Batch(batchsize);
         
-        
         while (!outbatch.isFull()) {
-            
             if (lcurs == 0 && eosr == true) {
                 /** new left block is to be fetched**/
-                leftbatch = (Batch) left.next();
-                leftblock = new Block(blocksize);
-                while(leftbatch != null && !leftblock.isFull()) {
-                    leftblock.addBatch(leftbatch);
-                    leftbatch = left.next();
+                leftblock = new Block(blocksize, batchsize);
+                
+                while(!eosl && !leftblock.isFull()) {
+                    leftbatch = (Batch) left.next();
+                    if(leftbatch != null) {
+                        leftblock.addBatch(leftbatch);
+                    } else {
+                        break;
+                    }
                 }
                 
                 if (leftblock.isEmpty()) {
                     eosl = true;
                     return outbatch;
                 }
-                /** Whenver a new left block came , we have to start the
+                /** Whenever a new left block came, we have to start the
                  ** scanning of right table
                  **/
                 try {

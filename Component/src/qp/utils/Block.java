@@ -5,13 +5,15 @@ import java.util.Vector;
 
 public class Block implements Serializable {
     int MAX_SIZE;
+    int pageSize;
     Vector batches;
     Vector tuples;
     
-    public Block(int numPage) {
+    public Block(int numPage, int pageSize) {
         MAX_SIZE = numPage;
+        this.pageSize = pageSize;
         batches = new Vector(MAX_SIZE);
-        tuples = new Vector();
+        tuples = new Vector(MAX_SIZE * pageSize);
     }
     
     public Vector getBatches() {
