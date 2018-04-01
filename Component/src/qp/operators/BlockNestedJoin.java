@@ -83,7 +83,7 @@ public class BlockNestedJoin extends Join {
             
             //if(right.getOpType() != OpType.SCAN){
             filenum++;
-            rfname = "NJtemp-" + String.valueOf(filenum);
+            rfname = "SNJtemp-" + String.valueOf(filenum);
             try {
                 ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(rfname));
                 while ((rightpage = right.next()) != null) {
@@ -91,7 +91,7 @@ public class BlockNestedJoin extends Join {
                 }
                 out.close();
             } catch (IOException io) {
-                System.out.println("NestedJoin:writing the temporay file error");
+                System.out.println("BlockNestedJoin:writing the temporary file error");
                 return false;
             }
             //}
