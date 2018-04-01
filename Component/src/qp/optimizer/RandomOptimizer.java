@@ -420,8 +420,10 @@ public class RandomOptimizer {
                 
                 case JoinType.SORTMERGE:
                     
-                    NestedJoin sm = new NestedJoin((Join) node);
-                    /* + other code */
+                    SortMergeJoin sm = new SortMergeJoin((Join) node);
+                    sm.setLeft(left);
+                    sm.setRight(right);
+                    sm.setNumBuff(numbuff);
                     return sm;
                 
                 case JoinType.HASHJOIN:

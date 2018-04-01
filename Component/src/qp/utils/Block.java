@@ -6,37 +6,55 @@ import java.util.Vector;
 public class Block implements Serializable {
     int MAX_SIZE;
     int pageSize;
-    Vector batches;
-    Vector tuples;
+    Vector<Batch> batches;
+    Vector<Tuple> tuples;
     
     public Block(int numPage, int pageSize) {
         MAX_SIZE = numPage;
         this.pageSize = pageSize;
-        batches = new Vector(MAX_SIZE);
-        tuples = new Vector(MAX_SIZE * pageSize);
+        batches = new Vector<>(MAX_SIZE);
+        tuples = new Vector<>(MAX_SIZE * pageSize);
     }
     
-    public Vector getBatches() {
+    public Vector<Batch> getBatches() {
         return batches;
     }
     
-    public void setBatches(Vector batches) {
+    public void setBatches(Vector<Batch> batches) {
         this.batches = batches;
         for (int i = 0; i < batches.size(); i++) {
-            for (int j = 0; j < ((Batch) batches.get(i)).size(); j++) {
-                tuples.add((Tuple) ((Batch) batches.get(i)).elementAt(j));
+            for (int j = 0; j < batches.get(i).size(); j++) {
+                tuples.add(batches.get(i).elementAt(j));
             }
         }
     }
     
     public void addBatch(Batch batch) {
-        batches.add(batch);
-        for (int i = 0; i < batch.size(); i++) {
-            tuples.add(batch.elementAt(i));
+        if(!isFull()) {
+            batches.add(batch);
+            for (int i = 0; i < batch.size(); i++) {
+                tuples.add(batch.elementAt(i));
+            }
         }
     }
     
-    public Vector getTuples() {
+    public void setTuples(Vector tupleList) {
+        Batch batch = new Batch(pageSize);
+        for(int i = 0;i < tupleList.size();i++) {
+            if(!batch.isFull()) {
+                batch.add((Tuple) tupleList.get(i));
+            } else {
+                batches.add(batch);
+                batch = new Batch(pageSize);
+            }
+            tuples.add((Tuple) tupleList.get(i));
+        }
+        if(!batch.isFull()) {
+            batches.add(batch);
+        }
+    }
+    
+    public Vector<Tuple> getTuples() {
         return tuples;
     }
     
