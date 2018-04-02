@@ -1,6 +1,7 @@
 /** This is main driver program of the query processor **/
 
 import java.io.*;
+import java.util.Arrays;
 
 import qp.utils.*;
 import qp.operators.*;
@@ -69,6 +70,31 @@ public class QueryMain{
     
         SQLQuery sqlquery = p.getSQLQuery();
         int numJoin = sqlquery.getNumJoin();
+        System.out.println("print from list");
+        System.out.println(sqlquery.getFromList().toString());
+
+        System.out.println("print project list");
+        for(int i=0; i<sqlquery.getProjectList().size(); i++) {
+            Attribute a = (Attribute) sqlquery.getProjectList().get(i);
+            Debug.PPrint(a);
+            System.out.println();
+        }
+
+        System.out.println("print select list");
+        for(int i=0; i<sqlquery.getSelectionList().size(); i++) {
+            Condition c = (Condition) sqlquery.getSelectionList().get(i);
+            Debug.PPrint(c);
+            System.out.println();
+        }
+
+        System.out.println("print join list");
+        for(int i=0; i<sqlquery.getJoinList().size(); i++) {
+            Condition c = (Condition) sqlquery.getJoinList().get(i);
+            Debug.PPrint(c);
+            System.out.println();
+        }
+
+        System.out.println(sqlquery.getNumJoin());
     
     
         /** If there are joins then assigns buffers to each join operator
@@ -136,6 +162,7 @@ public class QueryMain{
     /** Print final Plan **/
         System.out.println("----------------------Execution Plan----------------");
         Debug.PPrint(root);
+        System.out.println();
         System.out.println();
     
     
