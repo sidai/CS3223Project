@@ -16,7 +16,7 @@ public class Debug {
     public static void PPrint(Attribute attr) {
         String tabname = attr.getTabName();
         String colname = attr.getColName();
-        System.out.print(tabname + "." + colname);
+        System.out.print(tabname + "." + colname + " ");
     }
     
     
@@ -102,8 +102,7 @@ public class Debug {
             PPrint(((Select) node).getBase());
             System.out.print("  '");
             PPrint(((Select) node).getCondition());
-            System.out.print("'  ");
-            System.out.print(")");
+            System.out.print("')");
             
         } else if (optype == OpType.PROJECT) {
             System.out.print("Project(");

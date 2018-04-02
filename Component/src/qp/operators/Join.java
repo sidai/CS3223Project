@@ -51,7 +51,7 @@ public class Join extends Operator {
     
     
     public int getJoinType() {
-        System.out.println("The join type is " + jointype);
+        //System.out.println("The join type is " + jointype);
         return jointype;
     }
     
