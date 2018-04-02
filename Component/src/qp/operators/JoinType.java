@@ -19,7 +19,7 @@ public class JoinType {
     public static final int INDEXNESTED = 4;
     
     public static int numJoinTypes() {
-        return 3;
+        return 3;  // Currently only support NJ, BNJ and SMJ
         // return k for k joins
     }
     
