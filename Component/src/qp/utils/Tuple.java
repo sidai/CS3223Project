@@ -66,7 +66,19 @@ public class Tuple implements Serializable {
     public static int compareTuples(Tuple left, Tuple right, int index) {
         return compareTuples(left, right, index, index);
     }
-    
+
+    public static int compareTuples(Tuple left,Tuple right,Schema schema){
+        int judge;
+        Vector<Attribute> attrset=schema.getAttList();
+        for (Attribute i : attrset){
+            int index=schema.indexOf(i);
+            judge=compareTuples(left,right,index);
+            if(judge!=0){
+                return judge;
+            }
+        }
+        return 0;
+    }
     
     /**
      * comparing tuples in different tables, used for join condition checking
@@ -88,7 +100,6 @@ public class Tuple implements Serializable {
             return 0;
         }
     }
-    
     
 }
 
