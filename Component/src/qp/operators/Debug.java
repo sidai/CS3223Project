@@ -8,9 +8,6 @@ import qp.utils.*;
 
 public class Debug {
     
-    
-    
-    
     /* print the attribute **/
     
     public static void PPrint(Attribute attr) {
@@ -18,7 +15,15 @@ public class Debug {
         String colname = attr.getColName();
         System.out.print(tabname + "." + colname + " ");
     }
-    
+
+    /** print schema **/
+
+    public static void PPrint(Aggregation aggregation) {
+        Attribute attribute = aggregation.getAttribute();
+        System.out.println(aggregation.getName() + "(");
+        PPrint(attribute);
+        System.out.println(aggregation.getName() + ")");
+    }
     
     /** print the condition **/
     
@@ -106,6 +111,8 @@ public class Debug {
 
         } else if (optype == OpType.PROJECT) {
             System.out.print("Project(");
+            Aggregation aggregation = ((Project) node).getAggregation();
+            System.out.print(aggregation);
             PPrint(((Project) node).getBase());
             System.out.print(")");
         } else if (optype == OpType.DISTINCT) {
@@ -113,7 +120,7 @@ public class Debug {
             PPrint(((Distinct) node).getBase());
             System.out.print(")");
         } else if (optype == OpType.GROUP_BY) {
-            System.out.print("Project(");
+            System.out.print("GROUPBY(");
             PPrint(((GroupBy) node).getBase());
             System.out.print(")");
         } else if (optype == OpType.SCAN) {

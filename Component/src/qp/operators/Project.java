@@ -14,6 +14,7 @@ public class Project extends Operator {
     Vector attrSet;
     int batchsize;  // number of tuples per outbatch
 
+    Aggregation aggregation; // aggregation besides attribute set to be projected
 
     /** The following fields are requied during execution
      ** of the Project Operator
@@ -128,6 +129,13 @@ public class Project extends Operator {
 	    **/
     }
 
+    public void setAggregation(Aggregation aggregation) {
+        this.aggregation = aggregation;
+    }
+
+    public Aggregation getAggregation() {
+        return aggregation;
+    }
 
     public Object clone() {
         Operator newbase = (Operator) base.clone();

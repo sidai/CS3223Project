@@ -23,10 +23,11 @@ public class SortMerge extends Operator {
         this.attrSet = as;
     }
 
-    public SortMerge(Operator base, Vector as) {
-        super(OpType.SORT);
+    public SortMerge(Operator base, Vector as, int opType, int numBuff) {
+        super(opType);
         this.base = base;
         this.attrSet = as;
+        this.numBuff = numBuff;
     }
     
     public boolean open() {
@@ -324,7 +325,7 @@ public class SortMerge extends Operator {
     }
 
 
-    private Batch getNextBatch(ObjectInputStream inputStream) {
+    protected Batch getNextBatch(ObjectInputStream inputStream) {
         try {
             Batch batch = (Batch) inputStream.readObject();
             if(batch.isEmpty()) {

@@ -1,7 +1,6 @@
 /** This is main driver program of the query processor **/
 
 import java.io.*;
-import java.util.Arrays;
 
 import qp.utils.*;
 import qp.operators.*;
@@ -101,6 +100,11 @@ public class QueryMain{
             Debug.PPrint(a);
             System.out.println();
         }
+
+        System.out.println("print aggregation");
+        Aggregation ag = sqlquery.getAggregation();
+        Debug.PPrint(ag);
+        System.out.println();
     
     
         /** If there are joins then assigns buffers to each join operator

@@ -8,7 +8,8 @@ package qp.utils;
 import java.util.Vector;
 
 public class SQLQuery {
-    
+
+    Aggregation aggregation;
     
     Vector projectList;     //List of project attributes from select clause
     Vector fromList;        // List of tables in from clause
@@ -52,7 +53,6 @@ public class SQLQuery {
         joinList = new Vector();
         selectionList = new Vector();
     }
-    
     
     /** split the condition list into selection, and join list **/
     
@@ -105,7 +105,15 @@ public class SQLQuery {
     public Vector getGroupByList() {
         return groupbyList;
     }
-    
+
+    public void setAggregation(Aggregation aggregation) {
+        this.aggregation = aggregation;
+    }
+
+    public Aggregation getAggregation() {
+        return aggregation;
+    }
+
     public int getNumJoin() {
         if (joinList == null)
             return 0;
