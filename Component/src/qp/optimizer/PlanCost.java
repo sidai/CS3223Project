@@ -77,7 +77,10 @@ public class PlanCost {
             return getStatistics((Project) node);
         } else if (node.getOpType() == OpType.SCAN) {
             return getStatistics((Scan) node);
-
+        } else if (node.getOpType() == OpType.DISTINCT) {
+            return getStatistics((Distinct) node);
+        } else if (node.getOpType() == OpType.GROUP_BY) {
+            return getStatistics((GroupBy) node);
         }
         return -1;
     }
@@ -88,6 +91,22 @@ public class PlanCost {
      **/
 
     protected int getStatistics(Project node) {
+        return calculateCost(node.getBase());
+    }
+
+    /** projection will not change any statistics
+     ** No cost involved as done on the fly
+     **/
+
+    protected int getStatistics(Distinct node) {
+        return calculateCost(node.getBase());
+    }
+
+    /** projection will not change any statistics
+     ** No cost involved as done on the fly
+     **/
+
+    protected int getStatistics(GroupBy node) {
         return calculateCost(node.getBase());
     }
 

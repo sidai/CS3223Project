@@ -67,14 +67,12 @@ public class Tuple implements Serializable {
         return compareTuples(left, right, index, index);
     }
 
-    public static int compareTuples(Tuple left,Tuple right,Schema schema){
-        int judge;
-        Vector<Attribute> attrset=schema.getAttList();
-        for (Attribute i : attrset){
-            int index=schema.indexOf(i);
-            judge=compareTuples(left,right,index);
-            if(judge!=0){
-                return judge;
+    public static int compareTuples(Tuple left,Tuple right, int[] indexes){
+        int diff;
+        for (int index : indexes){
+            diff = compareTuples(left, right, index);
+            if(diff != 0){
+                return diff;
             }
         }
         return 0;

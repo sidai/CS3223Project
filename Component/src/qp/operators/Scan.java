@@ -41,7 +41,7 @@ public class Scan extends Operator {
     /** Open file prepare a stream pointer to read input file */
     
     public boolean open() {
-        
+        //System.out.println("Scan:-----------------in open--------------");
         /** num of tuples per batch**/
         int tuplesize = schema.getTupleSize();
         batchsize = Batch.getPageSize() / tuplesize;
@@ -66,7 +66,7 @@ public class Scan extends Operator {
      ***/
     
     public Batch next() {
-        
+        //System.out.println("Scan:-----------------in next--------------");
         /** The file reached its end and no more to read **/
         
         if (eos) {

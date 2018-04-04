@@ -84,7 +84,7 @@ public class RandomOptimizer {
         PlanCost pc = new PlanCost();
         RandomInitialPlan rip = new RandomInitialPlan(sqlquery);
         numJoin = rip.getNumJoins();
-        System.out.println("There are " + numJoin);
+        System.out.println("There are " + numJoin + " join");
 
         /** get an initial plan for the given sql query **/
         Operator initPlan = rip.prepareInitialPlan();
@@ -329,6 +329,10 @@ public class RandomOptimizer {
             return findNodeAt(((Select) node).getBase(), joinNum);
         } else if (node.getOpType() == OpType.PROJECT) {
             return findNodeAt(((Project) node).getBase(), joinNum);
+        } else if (node.getOpType() == OpType.DISTINCT) {
+            return findNodeAt(((Distinct) node).getBase(), joinNum);
+        } else if (node.getOpType() == OpType.GROUP_BY) {
+            return findNodeAt(((GroupBy) node).getBase(), joinNum);
         } else {
             return null;
         }
@@ -339,8 +343,6 @@ public class RandomOptimizer {
      * modifies the schema of operators which are modified due to selecing an alternative neighbor plan
      **/
     private void modifySchema(Operator node) {
-
-
         if (node.getOpType() == OpType.JOIN) {
             Operator left = ((Join) node).getLeft();
             Operator right = ((Join) node).getRight();
@@ -356,6 +358,14 @@ public class RandomOptimizer {
             modifySchema(base);
             Vector attrlist = ((Project) node).getProjAttr();
             node.setSchema(base.getSchema().subSchema(attrlist));
+        } else if (node.getOpType() == OpType.DISTINCT) {
+            Operator base = ((Distinct) node).getBase();
+            modifySchema(base);
+            node.setSchema(base.getSchema());
+        } else if (node.getOpType() == OpType.GROUP_BY) {
+            Operator base = ((GroupBy) node).getBase();
+            modifySchema(base);
+            node.setSchema(base.getSchema());
         }
     }
 
@@ -382,9 +392,6 @@ public class RandomOptimizer {
                     nj.setNumBuff(numbuff);
                     return nj;
 
-                /** Temporarity used simple nested join,
-                 replace with hashjoin, if implemented **/
-
                 case JoinType.BLOCKNESTED:
 
                     BlockNestedJoin bj = new BlockNestedJoin((Join) node);
@@ -401,6 +408,8 @@ public class RandomOptimizer {
                     sm.setNumBuff(numbuff);
                     return sm;
 
+                /** Temporarity used simple nested join,
+                 replace with hashjoin, if implemented **/
                 case JoinType.HASHJOIN:
 
                     NestedJoin hj = new NestedJoin((Join) node);
@@ -416,6 +425,18 @@ public class RandomOptimizer {
         } else if (node.getOpType() == OpType.PROJECT) {
             Operator base = makeExecPlan(((Project) node).getBase());
             ((Project) node).setBase(base);
+            return node;
+        } else if (node.getOpType() == OpType.DISTINCT) {
+            int totalbuff = BufferManager.getBuffers();
+            Operator base = makeExecPlan(((Distinct) node).getBase());
+            ((Distinct) node).setBase(base);
+            ((Distinct) node).setNumBuff(totalbuff);
+            return node;
+        } else if (node.getOpType() == OpType.GROUP_BY) {
+            int totalbuff = BufferManager.getBuffers();
+            Operator base = makeExecPlan(((GroupBy) node).getBase());
+            ((GroupBy) node).setBase(base);
+            ((GroupBy) node).setNumBuff(totalbuff);
             return node;
         } else {
             return node;

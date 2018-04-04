@@ -72,7 +72,7 @@ public class Debug {
     
     public static void PPrint(Operator node) {
         int optype = node.getOpType();
-        
+
         if (optype == OpType.JOIN) {
             int exprtype = ((Join) node).getJoinType();
             switch (exprtype) {
@@ -96,19 +96,26 @@ public class Debug {
             System.out.print("]  ");
             PPrint(((Join) node).getRight());
             System.out.print(")");
-            
+
         } else if (optype == OpType.SELECT) {
             System.out.print("Select(");
             PPrint(((Select) node).getBase());
             System.out.print("  '");
             PPrint(((Select) node).getCondition());
             System.out.print("')");
-            
+
         } else if (optype == OpType.PROJECT) {
             System.out.print("Project(");
             PPrint(((Project) node).getBase());
             System.out.print(")");
-            
+        } else if (optype == OpType.DISTINCT) {
+            System.out.print("DISTINCT(");
+            PPrint(((Distinct) node).getBase());
+            System.out.print(")");
+        } else if (optype == OpType.GROUP_BY) {
+            System.out.print("Project(");
+            PPrint(((GroupBy) node).getBase());
+            System.out.print(")");
         } else if (optype == OpType.SCAN) {
             System.out.print(((Scan) node).getTabName());
         }
