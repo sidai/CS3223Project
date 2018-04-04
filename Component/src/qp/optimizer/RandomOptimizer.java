@@ -401,9 +401,11 @@ public class RandomOptimizer {
                     return bj;
 
                 case JoinType.SORTMERGE:
-
-                    NestedJoin sm = new NestedJoin((Join) node);
-                    /* + other code */
+                 
+                    SortMergeJoin sm = new SortMergeJoin((Join) node);
+                    sm.setLeft(left);
+                    sm.setRight(right);
+                    sm.setNumBuff(numbuff);
                     return sm;
 
                 /** Temporarity used simple nested join,

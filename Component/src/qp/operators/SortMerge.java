@@ -1,7 +1,6 @@
 package qp.operators;
 
 import qp.utils.*;
-
 import java.io.*;
 import java.util.*;
 
@@ -64,7 +63,6 @@ public class SortMerge extends Operator {
                 System.err.println(" Error reading " + sortedFiles.get(0));
                 return false;
             }
-
             return true;
         }
     }

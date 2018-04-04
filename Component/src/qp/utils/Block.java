@@ -6,25 +6,25 @@ import java.util.Vector;
 public class Block implements Serializable {
     int MAX_SIZE;
     int pageSize;
-    Vector batches;
-    Vector tuples;
+    Vector<Batch> batches;
+    Vector<Tuple> tuples;
     
     public Block(int numPage, int pageSize) {
         MAX_SIZE = numPage;
         this.pageSize = pageSize;
-        batches = new Vector(MAX_SIZE);
-        tuples = new Vector(MAX_SIZE * pageSize);
+        batches = new Vector<>(MAX_SIZE);
+        tuples = new Vector<>(MAX_SIZE * pageSize);
     }
     
     public Vector<Batch> getBatches() {
         return batches;
     }
     
-    public void setBatches(Vector batches) {
+    public void setBatches(Vector<Batch> batches) {
         this.batches = batches;
         for (int i = 0; i < batches.size(); i++) {
-            for (int j = 0; j < ((Batch) batches.get(i)).size(); j++) {
-                tuples.add((Tuple) ((Batch) batches.get(i)).elementAt(j));
+            for (int j = 0; j < batches.get(i).size(); j++) {
+                tuples.add(batches.get(i).elementAt(j));
             }
         }
     }
@@ -53,7 +53,7 @@ public class Block implements Serializable {
         }
     }
     
-    public Vector getTuples() {
+    public Vector<Tuple> getTuples() {
         return tuples;
     }
     
