@@ -1,6 +1,4 @@
 package qp.operators;
-
-import com.sun.media.jfxmedia.logging.Logger;
 import qp.utils.*;
 
 import javax.lang.model.type.ArrayType;
@@ -49,6 +47,7 @@ public class SortMerge extends Operator {
             
             // Phase 2: Merge sorted runs
             mergeSortedFiles();
+    
             
             return true;
         }
@@ -58,16 +57,21 @@ public class SortMerge extends Operator {
         if(sortedFiles.size() != 1) {
             System.out.println("There is something wrong with sort-merge process. ");
         }
+        Batch batch = new Batch(tupleSize);
         try {
-            in = new ObjectInputStream(new FileInputStream(sortedFiles.get(0)));
-            Batch batch = (Batch) in.readObject();
-            return batch;
+            if(in == null) {
+                in = new ObjectInputStream(new FileInputStream(sortedFiles.get(0)));
+            }
+            batch = (Batch) in.readObject();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
-            System.out.println("File not found. ");
+            e.printStackTrace();
         }
-        return null;
+        if(batch.isEmpty()) {
+            return null;
+        }
+        return batch;
     }
     
     public boolean close() {
@@ -111,18 +115,21 @@ public class SortMerge extends Operator {
         mergeNumRuns = 0;
         mergeTimes = 0;
         
-        List<File> resultSortedFiles = new ArrayList<>();
+        List<File> resultSortedFiles;
         while(sortedFiles.size() > 1) {
             resultSortedFiles = new ArrayList<>();
             for(int i = 0;i * inputNumBuff < sortedFiles.size();i++) {
                 // every time sort $(inputNumBuff) files
                 int start = i *inputNumBuff;
                 int end = (i+1) * inputNumBuff;
+                
                 if(end >= sortedFiles.size()) {
                     end = sortedFiles.size();
                 }
+                System.out.println("start: " + start + " end" + end);
                 
                 List<File> currentFilesToBeSort = sortedFiles.subList(start, end);
+                System.out.println("The length of currentFilesToBeSorted is " + currentFilesToBeSort.size());
                 // merge $(inputNumBuff) runs to a longer run
                 File resultFile = mergeSortedRuns(currentFilesToBeSort, mergeTimes, mergeNumRuns);
                 mergeNumRuns++;
@@ -139,13 +146,15 @@ public class SortMerge extends Operator {
     
     public File mergeSortedRuns(List<File> runs, int numMerge, int numRuns) {
         int inputNumBuff = numBuff - 1;
+        int size = runs.size();
+//        System.out.println("Length of runs " + runs.size());
         if(inputNumBuff < runs.size()) {
             System.out.println("There are too many runs in input buffers. ");
             return null;
         }
         ArrayList<ObjectInputStream> inputStreams = new ArrayList<>();
         try {
-            for (int i = 0; i < runs.size(); i++) {
+            for (int i = 0; i < size; i++) {
                 ObjectInputStream in = new ObjectInputStream(new FileInputStream(runs.get(i)));
                 inputStreams.add(in);
             }
@@ -153,12 +162,14 @@ public class SortMerge extends Operator {
             System.out.println("Reading the temporary file error");
         }
         
-        ArrayList<Batch> inputBatches = new ArrayList<>(runs.size());
+        ArrayList<Batch> inputBatches = new ArrayList<>();
         try {
-            for (int i = 0; i < inputNumBuff; i++) {
+            for (int i = 0; i < size; i++) {
                 Object obj = inputStreams.get(i).readObject();
                 if(obj != null) {
                     inputBatches.add((Batch) obj);
+                } else {
+                    System.out.println("Null batches from input. ");
                 }
             }
         } catch (IOException e) {
@@ -167,48 +178,75 @@ public class SortMerge extends Operator {
             System.out.println("Class not found. ");
         }
         
+        // test whether there are batch in this ArrayList batches
+        for(int i = 0;i < size;i++) {
+            System.out.println(inputBatches.get(i).isEmpty());
+        }
+        
         // real merging process
         File resultFile = new File("mergedFile-" + numMerge + "-" + numRuns);
-//        ObjectOutputStream out;
-//        try {
-//            out = new ObjectOutputStream(new FileOutputStream(resultFile));
-//        } catch (IOException e) {
-//          System.out.println("Cannot create the output file stream. ");
-//        }
         
         Tuple min = inputBatches.get(0).elementAt(0);
         boolean flag = true;
-        boolean[] indicator = new boolean[runs.size()];
+        boolean[] indicator = new boolean[size];
+//        int[] batchIndexes = new int[size];
         for(int i = 0 ; i < indicator.length ; i++) {
             indicator[i] = true;
         }
         Batch outputBuffer = new Batch(batchSize);
         int minIndex = 0;
         // writeObject is the method to write object to output stream
+        int times = 0;
         while(flag) {
-            for(int i = 0;i < inputBatches.size();i++) {
+//            if(times >= 20)
+//                break;
+            System.out.println(times++);
+            for(int i = 0;i < size;i++) {
+                if(indicator[i] && !inputBatches.get(i).isEmpty()) {
+                    min = inputBatches.get(i).elementAt(0);
+                    minIndex = i;
+//                    System.out.println("The min index is " + minIndex);
+                    break;
+                }
+            }
+            for(int i = 0;i < size;i++) {
+//                times++;
+//                System.out.println(times);
+//                System.out.println(i);
                 if(indicator[i]) {
                     Batch currBatch = inputBatches.get(i);
                     if (currBatch.isEmpty()) {
+                        System.out.println(i);
                         try {
                             currBatch = (Batch) inputStreams.get(i).readObject();
-                            if (currBatch == null) {
-                                indicator[i] = false;
-                            }
+//                            System.out.println(inputBatches.size());
+                            inputBatches.remove(i);
+//                            System.out.println(inputBatches.size());
+                            inputBatches.add(i, currBatch);
+//                            System.out.println(inputBatches.size());
+//                            if (currBatch == null) {
+//                                indicator[i] = false;
+//                                break;
+//                            }
                         } catch (IOException e) {
-                            System.out.println("Reading input streams error");
+                            System.out.println("Reading input streams error " + i);
+                            indicator[i] = false;
+//                            break;
                         } catch (ClassNotFoundException e) {
                             System.out.println("Class not found. ");
                         }
                     }
-                    Tuple curr = currBatch.elementAt(0);
-                    if (Tuple.compareTuples(min, curr, attrIndex) == 1) {
-                        min = curr;
-                        minIndex = i;
+                    if(indicator[i]) {
+                        Tuple curr = currBatch.elementAt(0);
+                        if (Tuple.compareTuples(min, curr, attrIndex) == 1) {
+                            min = curr;
+                            minIndex = i;
+                        }
                     }
                 }
             }
             outputBuffer.add(min);
+//            System.out.println(minIndex);
             if(outputBuffer.isFull()) {
                 try {
                     ObjectOutputStream out = new AppendableObjectOutputStream(new FileOutputStream(resultFile));
@@ -219,7 +257,10 @@ public class SortMerge extends Operator {
                 }
                 outputBuffer = new Batch(batchSize);
             }
-            inputBatches.get(minIndex).remove(0);
+            if(!inputBatches.get(minIndex).isEmpty()) {
+                inputBatches.get(minIndex).remove(0);
+                System.out.println("Size is " + inputBatches.get(minIndex).size() + "-" + minIndex);
+            }
             
             // check flag
             flag = false;
@@ -227,6 +268,14 @@ public class SortMerge extends Operator {
                 if(indicator[i]) {
                     flag = true;
                 }
+            }
+        }
+        
+        for(int i = 0;i < size;i++) {
+            try {
+                inputStreams.get(i).close();
+            } catch(IOException e) {
+                e.printStackTrace();
             }
         }
         return resultFile;
@@ -242,6 +291,20 @@ public class SortMerge extends Operator {
                 out.writeObject(batch);
             }
             out.close();
+            
+            // debug purpose
+//            ObjectInputStream in = new ObjectInputStream(new FileInputStream(temp));
+//            try {
+//                Batch batch = (Batch) in.readObject();
+//                while(batch != null) {
+//                    System.out.println(batch);
+//                    batch = (Batch) in.readObject();
+//                }
+//            } catch (ClassNotFoundException e) {
+//                e.printStackTrace();
+//            }
+//            in.close();
+            
             return temp;
         } catch (IOException io) {
             System.out.println("SortMerge: writing the temporary file error");
@@ -262,5 +325,4 @@ public class SortMerge extends Operator {
         }
     }
     
-//    class TupleComparator implements
 }
