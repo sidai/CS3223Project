@@ -94,7 +94,13 @@ public class QueryMain{
             System.out.println();
         }
 
-        System.out.println(sqlquery.getNumJoin());
+        System.out.println("isDistinct: " + sqlquery.isDistinct());
+        System.out.println("print group by list");
+        for(int i=0; i<sqlquery.getGroupByList().size(); i++) {
+            Attribute a = (Attribute) sqlquery.getGroupByList().get(i);
+            Debug.PPrint(a);
+            System.out.println();
+        }
     
     
         /** If there are joins then assigns buffers to each join operator
@@ -199,17 +205,13 @@ public class QueryMain{
     
     
     
-    
         /** print the schema of the result **/
         Schema schema = root.getSchema();
         numAtts = schema.getNumCols();
         printSchema(schema);
         Batch resultbatch;
-    
-    
+
         /** print each tuple in the result **/
-    
-    
         while((resultbatch=root.next())!=null){
             for(int i=0;i<resultbatch.size();i++){
                 printTuple(resultbatch.elementAt(i));

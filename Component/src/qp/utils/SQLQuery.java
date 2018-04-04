@@ -38,7 +38,7 @@ public class SQLQuery {
         projectList = list1;
         fromList = list2;
         conditionList = list3;
-        groupbyList = null;
+        groupbyList = new Vector();
         splitConditionList(conditionList);
     }
     
@@ -47,8 +47,8 @@ public class SQLQuery {
     public SQLQuery(Vector list1, Vector list2) {
         projectList = list1;
         fromList = list2;
-        conditionList = null;
-        groupbyList = null;
+        conditionList = new Vector();
+        groupbyList = new Vector();
         joinList = new Vector();
         selectionList = new Vector();
     }
