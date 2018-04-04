@@ -14,7 +14,6 @@ public class Batch implements Serializable {
     
     Vector tuples; // The tuples in the page
     
-    
     /** Set number of bytes per page **/
     public static void setPageSize(int size) {
         PageSize = size;
@@ -68,8 +67,8 @@ public class Batch implements Serializable {
         return tuples.isEmpty();
     }
     
-    public void remove(int i) {
-        tuples.remove(i);
+    public Tuple remove(int i) {
+        return (Tuple) tuples.remove(i);
     }
     
     public void setElementAt(Tuple t, int i) {

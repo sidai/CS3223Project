@@ -24,23 +24,21 @@ public class RandomInitialPlan {
     Vector joinlist;          //List of join conditions
     Vector groupbylist;
     int numJoin;    // Number of joins in this query
-    
+    boolean isDistinct = false;
     
     Hashtable tab_op_hash;          //table name to the Operator
     Operator root; // root of the query plan tree
-    
+    int numBuff;
     
     public RandomInitialPlan(SQLQuery sqlquery) {
         this.sqlquery = sqlquery;
-        
         projectlist = (Vector) sqlquery.getProjectList();
         fromlist = (Vector) sqlquery.getFromList();
         selectionlist = sqlquery.getSelectionList();
         joinlist = sqlquery.getJoinList();
         groupbylist = sqlquery.getGroupByList();
         numJoin = joinlist.size();
-        
-        
+        isDistinct = sqlquery.isDistinct();
     }
     
     /** number of join conditions **/
@@ -61,6 +59,7 @@ public class RandomInitialPlan {
         if (numJoin != 0) {
             createJoinOp();
         }
+        createSortMergeOp();
         createProjectOp();
         return root;
     }
@@ -173,8 +172,7 @@ public class RandomInitialPlan {
             jn.setSchema(newsche);
             /** randomly select a join type**/
             int numJMeth = JoinType.numJoinTypes();
-//            int joinMeth = RandNumb.randInt(0, numJMeth - 1);
-            int joinMeth = 1; // temporarily set the join type as BlockNestedJoin
+            int joinMeth = RandNumb.randInt(0, numJMeth - 1);
             jn.setJoinType(joinMeth);
             
             modifyHashtable(left, jn);
@@ -204,7 +202,24 @@ public class RandomInitialPlan {
             root.setSchema(newSchema);
         }
     }
-    
+
+    public void createSortMergeOp() {
+        Operator base = root;
+        if(groupbylist == null)
+            groupbylist = new Vector();
+        if (!groupbylist.isEmpty()) {
+            root = new GroupBy(base, groupbylist, OpType.GROUP_BY);
+            // Continue to use the schema of projection
+            Schema newSchema = base.getSchema();
+            root.setSchema(newSchema);
+        }
+        if(isDistinct) {
+            root = new Distinct(base, projectlist, OpType.DISTINCT);
+            Schema newSchema = base.getSchema();
+            root.setSchema(newSchema);
+        }
+    }
+
     private void modifyHashtable(Operator old, Operator newop) {
         Enumeration e = tab_op_hash.keys();
         while (e.hasMoreElements()) {

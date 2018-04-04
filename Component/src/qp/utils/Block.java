@@ -30,9 +30,26 @@ public class Block implements Serializable {
     }
     
     public void addBatch(Batch batch) {
-        batches.add(batch);
-        for (int i = 0; i < batch.size(); i++) {
-            tuples.add(batch.elementAt(i));
+        if(!isFull()) {
+            batches.add(batch);
+            for (int i = 0; i < batch.size(); i++) {
+                tuples.add(batch.elementAt(i));
+            }
+        }
+    }
+    
+    public void setTuples(Vector tupleList) {
+        Batch batch = new Batch(pageSize);
+        for(int i = 0;i < tupleList.size();i++) {
+            if(batch.isFull()) {
+                batches.add(batch);
+                batch = new Batch(pageSize);
+            }
+            batch.add((Tuple) tupleList.get(i));
+            tuples.add((Tuple) tupleList.get(i));
+        }
+        if(!batch.isEmpty()) {
+            batches.add(batch);
         }
     }
     
