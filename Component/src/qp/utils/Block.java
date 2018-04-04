@@ -16,7 +16,7 @@ public class Block implements Serializable {
         tuples = new Vector(MAX_SIZE * pageSize);
     }
     
-    public Vector getBatches() {
+    public Vector<Batch> getBatches() {
         return batches;
     }
     
