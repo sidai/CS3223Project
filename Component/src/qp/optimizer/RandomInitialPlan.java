@@ -17,7 +17,8 @@ import java.io.*;
 public class RandomInitialPlan {
     
     SQLQuery sqlquery;
-    
+    Aggregation aggregation;
+
     Vector projectlist;
     Vector fromlist;
     Vector selectionlist;     //List of select conditons
@@ -39,6 +40,7 @@ public class RandomInitialPlan {
         groupbylist = sqlquery.getGroupByList();
         numJoin = joinlist.size();
         isDistinct = sqlquery.isDistinct();
+        aggregation = sqlquery.getAggregation();
     }
     
     /** number of join conditions **/
@@ -197,7 +199,7 @@ public class RandomInitialPlan {
             projectlist = new Vector();
         
         if (!projectlist.isEmpty()) {
-            root = new Project(base, projectlist, OpType.PROJECT);
+            root = new Project(base, projectlist, OpType.PROJECT, aggregation);
             Schema newSchema = base.getSchema().subSchema(projectlist);
             root.setSchema(newSchema);
         }
@@ -207,8 +209,8 @@ public class RandomInitialPlan {
         Operator base = root;
         if(groupbylist == null)
             groupbylist = new Vector();
-        if (!groupbylist.isEmpty()) {
-            root = new GroupBy(base, groupbylist, OpType.GROUP_BY);
+        if(aggregation != null || !groupbylist.isEmpty()) {
+            root = new GroupBy(base, groupbylist, aggregation, OpType.GROUP_BY);
             // Continue to use the schema of projection
             Schema newSchema = base.getSchema();
             root.setSchema(newSchema);

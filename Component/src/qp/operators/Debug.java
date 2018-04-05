@@ -19,10 +19,12 @@ public class Debug {
     /** print schema **/
 
     public static void PPrint(Aggregation aggregation) {
-        Attribute attribute = aggregation.getAttribute();
-        System.out.println(aggregation.getName() + "(");
-        PPrint(attribute);
-        System.out.println(aggregation.getName() + ")");
+        if(aggregation != null) {
+            Attribute attribute = aggregation.getAttribute();
+            System.out.println(aggregation.getName() + "(");
+            PPrint(attribute);
+            System.out.println(aggregation.getName() + ")");
+        }
     }
     
     /** print the condition **/
@@ -64,7 +66,6 @@ public class Debug {
     /** print schema **/
     
     public static void PPrint(Schema schema) {
-        System.out.println();
         for (int i = 0; i < schema.getNumCols(); i++) {
             Attribute attr = schema.getAttribute(i);
             PPrint(attr);
@@ -112,7 +113,6 @@ public class Debug {
         } else if (optype == OpType.PROJECT) {
             System.out.print("Project(");
             Aggregation aggregation = ((Project) node).getAggregation();
-            System.out.print(aggregation);
             PPrint(((Project) node).getBase());
             System.out.print(")");
         } else if (optype == OpType.DISTINCT) {

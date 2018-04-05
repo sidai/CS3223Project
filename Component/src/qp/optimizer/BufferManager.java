@@ -7,7 +7,7 @@ package qp.optimizer;
 
 public class BufferManager{
 
-    static int numBuffer = 3; //assume default three buffers;
+    static int numBuffer = 10; //assume default 10 buffers;
     static int numJoin;
 
     static int buffPerJoin;
@@ -20,7 +20,7 @@ public class BufferManager{
     }
 
     public static int getBuffersPerJoin(){
-	return buffPerJoin;
+	    return buffPerJoin;
     }
     public static int getBuffers(){
         return numBuffer;

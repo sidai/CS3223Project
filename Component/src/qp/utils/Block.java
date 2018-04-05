@@ -28,6 +28,22 @@ public class Block implements Serializable {
             }
         }
     }
+
+    public boolean addTuple(Tuple tuple) {
+        if(tuples.size() < MAX_SIZE * pageSize) {
+            tuples.add(tuple);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean removeTuple(Tuple tuple) {
+        if(tuples.size() > 0) {
+            tuples.remove(tuple);
+            return true;
+        }
+        return false;
+    }
     
     public void addBatch(Batch batch) {
         if(!isFull()) {
@@ -74,6 +90,11 @@ public class Block implements Serializable {
     }
     
     public boolean isFull() {
-        return (batches.size() >= MAX_SIZE);
+        return (getTupleSize() >= MAX_SIZE*pageSize);
+    }
+
+    public void clear() {
+        tuples = new Vector();
+        batches = new Vector();
     }
 }

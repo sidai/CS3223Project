@@ -54,7 +54,8 @@ public class Batch implements Serializable {
     public Tuple elementAt(int i) {
         return (Tuple) tuples.elementAt(i);
     }
-    
+
+    public Tuple getLastElement() { return (Tuple) tuples.lastElement();}
     public int indexOf(Tuple t) {
         return tuples.indexOf(t);
     }
@@ -64,7 +65,7 @@ public class Batch implements Serializable {
     }
     
     public boolean isEmpty() {
-        return tuples.isEmpty();
+        return (tuples==null || tuples.isEmpty());
     }
     
     public Tuple remove(int i) {

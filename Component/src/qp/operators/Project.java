@@ -30,10 +30,11 @@ public class Project extends Operator {
     int[] attrIndex;
 
 
-    public Project(Operator base, Vector as, int type) {
+    public Project(Operator base, Vector as, int type, Aggregation aggregation) {
         super(type);
         this.base = base;
         this.attrSet = as;
+        this.aggregation = aggregation;
     }
 
     public void setBase(Operator base) {
@@ -107,6 +108,10 @@ public class Project extends Operator {
             //Debug.PPrint(basetuple);
             //System.out.println();
             Vector present = new Vector();
+            /** add aggregated value in front of the output **/
+            if (aggregation != null) {
+                present.add(basetuple.getLastData());
+            }
             for (int j = 0; j < attrSet.size(); j++) {
                 Object data = basetuple.dataAt(attrIndex[j]);
                 present.add(data);
@@ -129,22 +134,22 @@ public class Project extends Operator {
 	    **/
     }
 
-    public void setAggregation(Aggregation aggregation) {
-        this.aggregation = aggregation;
+    public Object clone() {
+        Operator newbase = (Operator) base.clone();
+        Vector newattr = new Vector();
+        for (int i = 0; i < attrSet.size(); i++)
+            newattr.add((Attribute) ((Attribute) attrSet.elementAt(i)).clone());
+        Project newproj = new Project(newbase, newattr, optype, aggregation);
+        Schema newSchema = newbase.getSchema().subSchema(newattr);
+        newproj.setSchema(newSchema);
+        return newproj;
     }
 
     public Aggregation getAggregation() {
         return aggregation;
     }
 
-    public Object clone() {
-        Operator newbase = (Operator) base.clone();
-        Vector newattr = new Vector();
-        for (int i = 0; i < attrSet.size(); i++)
-            newattr.add((Attribute) ((Attribute) attrSet.elementAt(i)).clone());
-        Project newproj = new Project(newbase, newattr, optype);
-        Schema newSchema = newbase.getSchema().subSchema(newattr);
-        newproj.setSchema(newSchema);
-        return newproj;
+    public void setAggregation(Aggregation aggregation) {
+        this.aggregation = aggregation;
     }
 }

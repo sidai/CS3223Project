@@ -1,9 +1,9 @@
 package qp.operators;
 
-import org.w3c.dom.Attr;
 import qp.utils.Attribute;
 import qp.utils.Batch;
 import qp.utils.Block;
+import qp.utils.RandNumb;
 import qp.utils.Tuple;
 
 import java.io.*;
@@ -11,50 +11,37 @@ import java.util.ArrayList;
 import java.util.Vector;
 
 public class SortMergeJoin extends Join {
-    private int batchsize;  //Number of tuples per out batch
-    private int blocksize;  // number of batches per block
+    int batchsize;  //Number of tuples per out batch
 
-    private int leftindex;     // Index of the join attribute in left table
-    private int rightindex;    // Index of the join attribute in right table
+    int leftindex;     // Index of the join attribute in left table
+    int rightindex;    // Index of the join attribute in right table
+    Attribute leftattr;
+    Attribute rightattr;
 
-    private String rfname;    // The file name where the right table is materialize
+    int leftBatchSize;
+    int rightBatchSize;
 
-    private static int filenum = 0;   // To get unique filenum for this operation
+    Batch outbatch;   // Output buffer
+    Batch leftbatch;  // Buffer for left input stream
+    Batch rightbatch;  // Buffer for right input stream
+    Block tempBlock;
 
-//    Batch outbatch;   // Output buffer
-//    Batch leftbatch;  // Buffer for left input stream
-//    Block leftblock;
+    Tuple leftTuple;
+    Tuple rightTuple;
+    Tuple refTuple;
 
-    private Batch rightbatch;  // Buffer for right input stream
-    private ObjectInputStream in; // File pointer to the right hand materialized file
+    int lcurs;    // Cursor for left side buffer
+    int rcurs;    // Cursor for right side buffer
+    int tempcurs;
+    boolean eos;  // Whether end of stream (left table or right table) is reached
 
-    private int lcurs;    // Cursor for left side buffer
-    private int rcurs;    // Cursor for right side buffer
-    private boolean eosl;  // Whether end of stream (left table) is reached
-    private boolean eosr;  // End of stream (right table)
-
-    private File fileLeft;
-    private File fileRight;
-    private ArrayList<File> filesRight;
-
-    private SortMerge sortedLeft;
-    private SortMerge sortedRight;
-
-    int numOfRightTuples;
-
-    // next()
-    private Batch leftBatch;
-    private Batch rightBatch;
-
-    private int rightIndex;
-    private int startOfPartition;
-    private boolean tupleEqual;
+    SortMerge sortedLeft;
+    SortMerge sortedRight;
 
     public SortMergeJoin(Join jn) {
         super(jn.getLeft(), jn.getRight(), jn.getCondition(), jn.getOpType());
         schema = jn.getSchema();
         jointype = jn.getJoinType();
-        numBuff = jn.getNumBuff();
     }
 
 
@@ -65,161 +52,427 @@ public class SortMergeJoin extends Join {
 
     @Override
     public boolean open() {
-
+        System.out.println("SortMergeJoin:-----------------in open--------------");
+        Debug.PPrint(schema);
         // select number of tuples per batch and number of batches per block
         int tuplesize = schema.getTupleSize();
         batchsize = Batch.getPageSize() / tuplesize;
-        blocksize = numBuff - 1;
 
-        Attribute leftattr = con.getLhs();
+        leftattr = con.getLhs();
         Vector<Attribute> leftSet = new Vector<>();
         leftSet.add(leftattr);
 
-        Attribute rightattr = (Attribute) con.getRhs();
+
+        rightattr = (Attribute) con.getRhs();
         Vector<Attribute> rightSet = new Vector<>();
         rightSet.add(rightattr);
 
         leftindex = left.getSchema().indexOf(leftattr);
-        rightindex = right.getSchema().indexOf(rightattr);
+        int leftTupleSize = left.getSchema().getTupleSize();
+        leftBatchSize = Batch.getPageSize() / leftTupleSize;
 
-        sortedLeft = new SortMerge(left, leftSet, OpType.SORT, numBuff);
+        rightindex = right.getSchema().indexOf(rightattr);
+        int rightTupleSize = right.getSchema().getTupleSize();
+        rightBatchSize = Batch.getPageSize() / rightTupleSize;
+
+        System.out.print("left attr: ");
+        Debug.PPrint(leftattr);
+
+        System.out.print(" right attr: ");
+        Debug.PPrint(rightattr);
+
+        System.out.println();
+        System.out.println("index: " + leftindex + " " + rightindex);
+//        System.out.println("=====left schema====");
+//        Debug.PPrint(left.getSchema());
+//
+//        System.out.println("=====right schema====");
+//        Debug.PPrint(right.getSchema());
+//        System.out.println();
+//        System.out.println("index: " + rightindex);
+//        System.out.println("attr: " + rightattr.getTabName() + " " + rightattr.getColName());
+
+//        System.out.println("buffer size: " + numBuff);
+        sortedLeft = new SortMerge(left, leftSet, optype, numBuff, "left" + RandNumb.randInt(0, 10000));
 //        System.out.println(left.getSchema().getAttList());
 
-        sortedRight = new SortMerge(right, rightSet, OpType.SORT, numBuff);
+        sortedRight = new SortMerge(right, rightSet, optype, numBuff, "right" + RandNumb.randInt(0,10000));
 //        System.out.println(right.getSchema().getAttList());
 
+        // open base operator for getting the base batch
+        if (!left.open() || !right.open()) {
+            return false;
+        }
 
+        // open sort merge operator to sort the result
         if(!sortedLeft.open() || !sortedRight.open()) {
             return false;
         }
 
-        System.out.println();
-        Debug.PPrint(sortedLeft.next());
+//        System.out.println("========left===============");
+//        try {
+//            while (true) {
+//                Batch batch = sortedLeft.next();
+//                if (batch == null)
+//                    break;
+//                for (int j = 0; j < batch.size(); j++) {
+//                    Tuple present = batch.elementAt(j);
+//                    System.out.print("tuple: ");
+//                    for(int i=0; i<present._data.size(); i++) {
+//                        System.out.print(present.dataAt(i) + " ");
+//                    }
+//                    System.out.println();
+//                }
+//            }
+//            System.out.println();
+//        } catch (Exception e) {
+//            System.err.println(" Error reading " + sortedLeft.fileName);
+//        }
+//        System.out.println();
+//        System.out.println("==========right=============");
+//        try {
+//            while (true) {
+//                Batch batch = sortedRight.next();
+//                if (batch == null)
+//                    break;
+//                for (int j = 0; j < batch.size(); j++) {
+//                    Tuple present = batch.elementAt(j);
+//                    System.out.print("tuple: ");
+//                    for(int i=0; i<present._data.size(); i++) {
+//                        System.out.print(present.dataAt(i) + " ");
+//                    }
+//                    System.out.println();
+//                }
+//            }
+//            System.out.println();
+//        } catch (Exception e) {
+//            System.err.println(" Error reading " + sortedRight.fileName);
+//        }
+//        System.out.println();
 
-        System.out.println();
-        Debug.PPrint(sortedRight.next());
-
-        System.out.println("=========Left==========");
-        try {
-            in = new ObjectInputStream(new FileInputStream(sortedLeft.sortedFiles.get(0)));
-            while (true) {
-                Batch batch = sortedLeft.getNextBatch(in);
-                if (batch == null)
-                    break;
-                for (int j = 0; j < batch.size(); j++) {
-                    Tuple present = batch.elementAt(j);
-                    System.out.println("tuple: " + present.dataAt(0) + " " + present.dataAt(1)
-                            + " " + present.dataAt(2) + " " + present.dataAt(3));
-                }
-            }
-            System.out.println();
-        } catch (Exception e) {
-            System.err.println(" Error reading " + sortedLeft.sortedFiles.get(0));
-        }
-        System.out.println();
-
-        System.out.println("=========Right==========");
-        try {
-            in = new ObjectInputStream(new FileInputStream(sortedRight.sortedFiles.get(0)));
-            while (true) {
-                Batch batch = sortedRight.getNextBatch(in);
-                if (batch == null)
-                    break;
-                for (int j = 0; j < batch.size(); j++) {
-                    Tuple present = batch.elementAt(j);
-                    System.out.println("tuple: " + present.dataAt(0) + " " + present.dataAt(1)
-                            + " " + present.dataAt(2) + " " + present.dataAt(3));
-                }
-            }
-            System.out.println();
-        } catch (Exception e) {
-            System.err.println(" Error reading " + sortedLeft.sortedFiles.get(0));
-        }
-        System.out.println();
-
-        // Left and right operators are not base table, materialize them to files.
-//        fileLeft = materialize(sortedLeft, "left");
-        numOfRightTuples = 0;
-        filesRight = materialize(sortedRight, "right");
-        System.out.println("The number of right tuples " +numOfRightTuples);
-//        sortedLeft.close();
-//        sortedRight.close();
-
-        eosl = false;
-        eosr = false;
+        eos = false;
 
         lcurs = 0;
         rcurs = 0;
 
-        rightIndex = 0;
-        startOfPartition = 0;
-        tupleEqual = false;
+        tempBlock = new Block(numBuff-2, rightBatchSize);
+        tempcurs = 0;
 
+        //Store the first group of tuples from right operation with same merge attribute into the block
+        rightbatch = sortedRight.next();
+        System.out.println("========LOADING right batch 1=======");
+        for (int j = 0; j < rightbatch.size(); j++) {
+            Tuple present = rightbatch.elementAt(j);
+            System.out.print("tuple: ");
+            for(int i=0; i<present._data.size(); i++) {
+                System.out.print(present.dataAt(i) + " ");
+            }
+            System.out.println();
+        }
+        System.out.println("=======done right batch=======");
+        System.out.println();
+        refTuple = rightbatch.elementAt(0);
+        while(rightbatch != null) {
+            rightTuple = rightbatch.elementAt(rcurs);
+
+//            System.out.print("tuple: ");
+//            for(int i=0; i<refTuple._data.size(); i++) {
+//                System.out.print(refTuple.dataAt(i) + " ");
+//            }
+//            System.out.println();
+
+            if(Tuple.compareTuples(refTuple, rightTuple, rightindex) == 0) {
+                tempBlock.addTuple(rightTuple);
+                rcurs++;
+                // move to next tuple and add current tuple into block if it has same merge attribute
+                if(rcurs == rightbatch.size()) {
+                    rcurs = 0;
+                    rightbatch = sortedRight.next();
+                    if(rightbatch == null) {
+                        eos = true;
+                        break;
+                    }
+                    System.out.println("========LOADING right batch 2=======");
+                    for (int j = 0; j < rightbatch.size(); j++) {
+                        Tuple present = rightbatch.elementAt(j);
+                        System.out.print("tuple: ");
+                        for(int i=0; i<present._data.size(); i++) {
+                            System.out.print(present.dataAt(i) + " ");
+                        }
+                        System.out.println();
+                    }
+                    System.out.println("=======done right batch=======");
+                    System.out.println();
+                }
+            } else {
+                break;
+            }
+        }
+
+//        System.out.println("=======================");
+//        try {
+//            for (int j = 0; j < rightbatch.size(); j++) {
+//                Tuple present = rightbatch.elementAt(j);
+//                System.out.print("tuple: ");
+//                for(int i=0; i<present._data.size(); i++) {
+//                    System.out.print(present.dataAt(i) + " ");
+//                }
+//                System.out.println();
+//            }
+//            System.out.println();
+//        } catch (Exception e) {
+//            System.err.println(" Error reading ");
+//        }
+//        System.out.println();
+
+        //preload a left batch
+        leftbatch = sortedLeft.next();
         return true;
     }
 
     public Batch next() {
-//        Batch left = sortedLeft.next();
-        Batch result = new Batch(batchsize);
-        try {
-            boolean flag = true;
-            while(flag) {
-                if(lcurs == 0) {
-                    leftBatch = sortedLeft.next();
-
-//                    if(leftBatch != null) {
-//                        for(int i = 0;i < leftBatch.size();i++) {
-//                            System.out.println(leftBatch.elementAt(i)._data);
-//                        }
-//                    }
-//
-                    if(leftBatch == null) {
-                        return null;
+        System.out.println("SortMergeJoin:-----------------in next--------------");
+        // right or left batch has proceeded, handle remaining data in the tempBlock if exists
+        if (eos) {
+            if(!tempBlock.isEmpty()) {
+                outbatch = new Batch(batchsize);
+                while (!outbatch.isFull()) {
+                    leftTuple = leftbatch.elementAt(lcurs);
+                    int diff = Tuple.compareTuples(leftTuple, refTuple, leftindex, rightindex);
+                    if(diff < 0) {
+                        lcurs++;
+                    } else if (diff == 0) {
+                        while (tempcurs < tempBlock.getTupleSize()) {
+                            outbatch.add(leftTuple.joinWith(tempBlock.getTuple(tempcurs)));
+                            tempcurs++;
+                            // return when outbatch is full, leftover will be handled at the start of the next run
+                            if (outbatch.isFull()) {
+                                return outbatch;
+                            }
+                            if (tempcurs == tempBlock.getTupleSize()) {
+                                tempcurs = 0;
+                                lcurs++;
+                                if (lcurs == leftbatch.size()) {
+                                    leftbatch = sortedLeft.next();
+                                    lcurs = 0;
+                                    if (leftbatch == null) {
+                                        eos = true;
+                                        return outbatch;
+                                    }
+                                }
+                            }
+                        }
+                    } else if (diff > 0) {
+                        tempBlock.clear();
+                        tempcurs = 0;
+                        return outbatch;
                     }
                 }
-
-                int rightFileIndex = rightIndex / batchsize;
-                int rightTupleIndex = rightIndex % batchsize;
-                File rightFile = filesRight.get(rightFileIndex);
-                Batch rightBatch = (Batch) (new ObjectInputStream(new FileInputStream(rightFile))).readObject();
-                Tuple rightTuple = rightBatch.elementAt(rightTupleIndex);
-                Tuple leftTuple = leftBatch.elementAt(lcurs);
-
-                System.out.println("Left tuple: " + leftTuple._data);
-                System.out.println("Right tuple: " + rightTuple._data);
-
-                int leftOrRight = Tuple.compareTuples(leftTuple, rightTuple, leftindex, rightindex);
-
-                if(leftOrRight < 0) {
-                    lcurs = (lcurs+1) % batchsize;
-                    if(tupleEqual) {
-                        rightIndex = startOfPartition;
-                    }
-                    tupleEqual = false;
-                } else if(leftOrRight > 0) {
-                    rightIndex++;
-                    tupleEqual = false;
-                } else // leftOrRight == 1, which means leftTuple == rightTuple
-                {
-                    if(!tupleEqual) {
-                        startOfPartition = rightIndex; // new startOfPartition
-                    }
-                    tupleEqual = true;
-                    Tuple resultTuple = leftTuple.joinWith(rightTuple);
-                    result.add(resultTuple);
-                    rightIndex++;
-                }
-
-                flag = !result.isFull() && ((leftBatch = sortedLeft.next()) != null) && (rightIndex < numOfRightTuples);
             }
-        } catch (IOException|ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        if(result.isEmpty()) {
+            close();
             return null;
         }
-        return result;
+
+        outbatch = new Batch(batchsize);
+        while (!outbatch.isFull()) {
+            leftTuple = leftbatch.elementAt(lcurs);
+            System.out.print("tuple at "+ lcurs + ": ");
+            for(int i=0; i<leftTuple._data.size(); i++) {
+                System.out.print(leftTuple.dataAt(i) + " ");
+            }
+            System.out.println();
+//            System.out.print("left tuple: ");
+//            for(int i=0; i<refTuple._data.size(); i++) {
+//                System.out.print(refTuple.dataAt(i) + " ");
+//            }
+//            System.out.println();
+            int diff = Tuple.compareTuples(leftTuple, refTuple, leftindex, rightindex);
+
+            if (diff == 0) {
+                // join leftTuple with all satisfied tuples in tempBlock and add to outbatch
+                while (tempcurs < tempBlock.getTupleSize()) {
+                    outbatch.add(leftTuple.joinWith(tempBlock.getTuple(tempcurs)));
+                    System.out.println("=========add to out batch==============");
+                    try {
+                        Tuple present = outbatch.getLastElement();
+                        System.out.print("tuple: ");
+                        for(int i=0; i<present._data.size(); i++) {
+                            System.out.print(present.dataAt(i) + " ");
+                        }
+                        System.out.println();
+                    } catch (Exception e) {
+                        System.err.println(" Error reading ");
+                    }
+                    tempcurs++;
+                    // return when outbatch is full, leftover will be handled at the start of the next run
+                    if (outbatch.isFull()) {
+                        System.out.println("=========full out batch==============");
+                        try {
+                            for (int j = 0; j < outbatch.size(); j++) {
+                                Tuple present = outbatch.elementAt(j);
+                                System.out.print("tuple: ");
+                                for(int i=0; i<present._data.size(); i++) {
+                                    System.out.print(present.dataAt(i) + " ");
+                                }
+                                System.out.println();
+                            }
+                        } catch (Exception e) {
+                            System.err.println(" Error reading ");
+                        }
+                        return outbatch;
+                    }
+                }
+                // complete join with all satisfied tuple in rightbatch, move left cursor to next tuple
+                if (tempcurs == tempBlock.getTupleSize()) {
+                    tempcurs = 0;
+                    lcurs++;
+                    // left batch reach the end, start loading a new batch
+                    if (lcurs == leftbatch.size()) {
+                        leftbatch = sortedLeft.next();
+                        lcurs = 0;
+                        if (leftbatch == null) {
+                            eos = true;
+                            System.out.println("=========equal out batch==============");
+                            try {
+                                for (int j = 0; j < outbatch.size(); j++) {
+                                    Tuple present = outbatch.elementAt(j);
+                                    System.out.print("tuple: ");
+                                    for(int i=0; i<present._data.size(); i++) {
+                                        System.out.print(present.dataAt(i) + " ");
+                                    }
+                                    System.out.println();
+                                }
+                                System.out.println();
+                            } catch (Exception e) {
+                                System.err.println(" Error reading ");
+                            }
+                            return outbatch;
+                        }
+                    }
+                }
+            } else if (diff < 0) {
+                // move left to next tuple since it is small than last rightTuple in the temp batch
+                lcurs++;
+                // left batch reach the end, start loading a new batch
+                if (lcurs == leftbatch.size()) {
+                    leftbatch = sortedLeft.next();
+                    lcurs = 0;
+                    if (leftbatch == null) {
+                        eos = true;
+                        System.out.println("=========smaller out batch==============");
+                        try {
+                            for (int j = 0; j < outbatch.size(); j++) {
+                                Tuple present = outbatch.elementAt(j);
+                                System.out.print("tuple: ");
+                                for(int i=0; i<present._data.size(); i++) {
+                                    System.out.print(present.dataAt(i) + " ");
+                                }
+                                System.out.println();
+                            }
+                            System.out.println();
+                        } catch (Exception e) {
+                            System.err.println(" Error reading ");
+                        }
+                        return outbatch;
+                    }
+                }
+            } else if (diff > 0) {
+                // leftTuple has a larger value, discard all of the stored tuple and move the right cursor till
+                // the next rightTuple whose value is not smaller than leftTuple
+                tempBlock.clear();
+                tempcurs = 0;
+                while (Tuple.compareTuples(leftTuple, rightTuple, leftindex, rightindex) > 0) {
+                    rcurs++;
+                    if (rcurs == rightbatch.size()) {
+                        System.out.println("size equal: " + rcurs + " " + rightbatch.size());
+                        rcurs = 0;
+                        rightbatch = sortedRight.next();
+                        if(rightbatch == null) {
+                            eos = true;
+                            break;
+                        }
+                        System.out.println("========LOADING right batch 3=======");
+                        for (int j = 0; j < rightbatch.size(); j++) {
+                            Tuple present = rightbatch.elementAt(j);
+                            System.out.print("tuple: ");
+                            for(int i=0; i<present._data.size(); i++) {
+                                System.out.print(present.dataAt(i) + " ");
+                            }
+                            System.out.println();
+                        }
+                        System.out.println("=======done right batch=======");
+                        System.out.println();
+                        if (rightbatch==null) {
+                            eos = true;
+                            System.out.println("=========bigger out batch==============");
+                            try {
+                                for (int j = 0; j < outbatch.size(); j++) {
+                                    Tuple present = outbatch.elementAt(j);
+                                    System.out.print("tuple: ");
+                                    for(int i=0; i<present._data.size(); i++) {
+                                        System.out.print(present.dataAt(i) + " ");
+                                    }
+                                    System.out.println();
+                                }
+                                System.out.println();
+                            } catch (Exception e) {
+                                System.err.println(" Error reading ");
+                            }
+                            return outbatch;
+                        }
+                    }
+                    rightTuple = rightbatch.elementAt(rcurs);
+                }
+                refTuple = rightbatch.elementAt(rcurs);
+                // store the next group of tuples from right operation that are not smaller than leftTuple
+                while (true) {
+                    rightTuple = rightbatch.elementAt(rcurs);
+
+                    // add current tuple into block if it has same merge attribute
+                    if (Tuple.compareTuples(refTuple, rightTuple, rightindex) == 0) {
+                        tempBlock.addTuple(rightTuple);
+                        rcurs++;
+                        if (rcurs == rightbatch.size()) {
+                            rcurs = 0;
+                            rightbatch = sortedRight.next();
+                            if(rightbatch == null) {
+                                eos = true;
+                                break;
+                            }
+                            System.out.println("========LOADING right batch 4=======");
+                            for (int j = 0; j < rightbatch.size(); j++) {
+                                Tuple present = rightbatch.elementAt(j);
+                                System.out.print("tuple: ");
+                                for(int i=0; i<present._data.size(); i++) {
+                                    System.out.print(present.dataAt(i) + " ");
+                                }
+                                System.out.println();
+                            }
+                            System.out.println("=======done right batch=======");
+                            System.out.println();
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        System.out.println("=========out batch==============");
+        try {
+            for (int j = 0; j < outbatch.size(); j++) {
+                Tuple present = outbatch.elementAt(j);
+                System.out.print("tuple: ");
+                for(int i=0; i<present._data.size(); i++) {
+                    System.out.print(present.dataAt(i) + " ");
+                }
+                System.out.println();
+            }
+            System.out.println();
+        } catch (Exception e) {
+            System.err.println(" Error reading ");
+        }
+
+        return outbatch;
     }
 
 
@@ -229,35 +482,8 @@ public class SortMergeJoin extends Join {
 
     /** Close the operator */
     public boolean close() {
-//        for(File file : filesRight) {
-//            file.delete();
-//        }
-//
-//        sortedLeft.close();
-//        sortedRight.close();
+        sortedLeft.close();
+        sortedRight.close();
         return true;
     }
-
-    public ArrayList<File> materialize(SortMerge op, String base) {
-        int num = 0;
-        ArrayList<File> results = new ArrayList<>();
-        try {
-            Batch batch = op.next();
-            while(batch != null) {
-                File result = new File("base-" + base + "-" + num + ".txt");
-                ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(result));
-                out.writeObject(batch);
-                out.close();
-                results.add(result);
-                numOfRightTuples += batch.size();
-                batch = op.next();
-                num++;
-            }
-            return results;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
 }

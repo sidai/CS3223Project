@@ -14,7 +14,10 @@ import java.io.Serializable;
 public class Tuple implements Serializable {
     public Vector _data;
     
-    
+    public Tuple() {
+        _data = new Vector();
+    }
+
     public Tuple(Vector d) {
         _data = d;
     }
@@ -29,7 +32,14 @@ public class Tuple implements Serializable {
     public Object dataAt(int index) {
         return _data.elementAt(index);
     }
-    
+
+    public Object getLastData() {
+        return _data.lastElement();
+    }
+
+    public void appendAggregatedValue(Object aggregatedValue) {
+        _data.add(aggregatedValue);
+    }
     
     /**
      * Checks whether the join condition is satisfied or not
