@@ -234,14 +234,25 @@ public class SortMergeJoin extends Join {
         System.out.println("SortMergeJoin:-----------------in next--------------");
         // right or left batch has proceeded, handle remaining data in the tempBlock if exists
         if (eos) {
-            if(!tempBlock.isEmpty()) {
+            if(tempBlock != null && !tempBlock.isEmpty()) {
                 outbatch = new Batch(batchsize);
                 while (!outbatch.isFull()) {
                     leftTuple = leftbatch.elementAt(lcurs);
                     int diff = Tuple.compareTuples(leftTuple, refTuple, leftindex, rightindex);
-                    if(diff < 0) {
+                    if (diff < 0) {
                         lcurs++;
+                        if (lcurs == leftbatch.size()) {
+                            leftbatch = sortedLeft.next();
+                            lcurs = 0;
+                            if (leftbatch == null) {
+                                eos = true;
+                                // complete, clear all buffer
+                                tempBlock.clear();
+                                return outbatch;
+                            }
+                        }
                     } else if (diff == 0) {
+                        System.out.println("size: " + tempcurs + " " + tempBlock.size());
                         while (tempcurs < tempBlock.size()) {
                             outbatch.add(leftTuple.joinWith((Tuple) tempBlock.get(tempcurs)));
                             tempcurs++;
@@ -249,16 +260,18 @@ public class SortMergeJoin extends Join {
                             if (outbatch.isFull()) {
                                 return outbatch;
                             }
-                            if (tempcurs == tempBlock.size()) {
-                                tempcurs = 0;
-                                lcurs++;
-                                if (lcurs == leftbatch.size()) {
-                                    leftbatch = sortedLeft.next();
-                                    lcurs = 0;
-                                    if (leftbatch == null) {
-                                        eos = true;
-                                        return outbatch;
-                                    }
+                        }
+                        if (tempcurs == tempBlock.size()) {
+                            tempcurs = 0;
+                            lcurs++;
+                            if (lcurs == leftbatch.size()) {
+                                leftbatch = sortedLeft.next();
+                                lcurs = 0;
+                                if (leftbatch == null) {
+                                    eos = true;
+                                    // complete, clear all buffer
+                                    tempBlock.clear();
+                                    return outbatch;
                                 }
                             }
                         }
@@ -268,9 +281,10 @@ public class SortMergeJoin extends Join {
                         return outbatch;
                     }
                 }
+            } else {
+                close();
+                return null;
             }
-            close();
-            return null;
         }
 
         outbatch = new Batch(batchsize);
@@ -332,6 +346,8 @@ public class SortMergeJoin extends Join {
                         lcurs = 0;
                         if (leftbatch == null) {
                             eos = true;
+                            // complete, clear all buffer
+                            tempBlock.clear();
                             System.out.println("=========equal out batch==============");
                             try {
                                 for (int j = 0; j < outbatch.size(); j++) {
@@ -359,6 +375,8 @@ public class SortMergeJoin extends Join {
                     lcurs = 0;
                     if (leftbatch == null) {
                         eos = true;
+                        // complete, clear all buffer
+                        tempBlock.clear();
                         System.out.println("=========smaller out batch==============");
                         try {
                             for (int j = 0; j < outbatch.size(); j++) {
