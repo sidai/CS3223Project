@@ -24,7 +24,7 @@ public class SortMergeJoin extends Join {
     Batch outbatch;   // Output buffer
     Batch leftbatch;  // Buffer for left input stream
     Batch rightbatch;  // Buffer for right input stream
-    Block tempBlock;
+    Vector tempBlock;
 
     Tuple leftTuple;
     Tuple rightTuple;
@@ -155,7 +155,7 @@ public class SortMergeJoin extends Join {
         lcurs = 0;
         rcurs = 0;
 
-        tempBlock = new Block(numBuff-2, rightBatchSize);
+        tempBlock = new Vector();
         tempcurs = 0;
 
         //Store the first group of tuples from right operation with same merge attribute into the block
@@ -182,7 +182,7 @@ public class SortMergeJoin extends Join {
 //            System.out.println();
 
             if(Tuple.compareTuples(refTuple, rightTuple, rightindex) == 0) {
-                tempBlock.addTuple(rightTuple);
+                tempBlock.add(rightTuple);
                 rcurs++;
                 // move to next tuple and add current tuple into block if it has same merge attribute
                 if(rcurs == rightbatch.size()) {
@@ -242,14 +242,14 @@ public class SortMergeJoin extends Join {
                     if(diff < 0) {
                         lcurs++;
                     } else if (diff == 0) {
-                        while (tempcurs < tempBlock.getTupleSize()) {
-                            outbatch.add(leftTuple.joinWith(tempBlock.getTuple(tempcurs)));
+                        while (tempcurs < tempBlock.size()) {
+                            outbatch.add(leftTuple.joinWith((Tuple) tempBlock.get(tempcurs)));
                             tempcurs++;
                             // return when outbatch is full, leftover will be handled at the start of the next run
                             if (outbatch.isFull()) {
                                 return outbatch;
                             }
-                            if (tempcurs == tempBlock.getTupleSize()) {
+                            if (tempcurs == tempBlock.size()) {
                                 tempcurs = 0;
                                 lcurs++;
                                 if (lcurs == leftbatch.size()) {
@@ -290,8 +290,8 @@ public class SortMergeJoin extends Join {
 
             if (diff == 0) {
                 // join leftTuple with all satisfied tuples in tempBlock and add to outbatch
-                while (tempcurs < tempBlock.getTupleSize()) {
-                    outbatch.add(leftTuple.joinWith(tempBlock.getTuple(tempcurs)));
+                while (tempcurs < tempBlock.size()) {
+                    outbatch.add(leftTuple.joinWith((Tuple) tempBlock.get(tempcurs)));
                     System.out.println("=========add to out batch==============");
                     try {
                         Tuple present = outbatch.getLastElement();
@@ -323,7 +323,7 @@ public class SortMergeJoin extends Join {
                     }
                 }
                 // complete join with all satisfied tuple in rightbatch, move left cursor to next tuple
-                if (tempcurs == tempBlock.getTupleSize()) {
+                if (tempcurs == tempBlock.size()) {
                     tempcurs = 0;
                     lcurs++;
                     // left batch reach the end, start loading a new batch
@@ -430,7 +430,7 @@ public class SortMergeJoin extends Join {
 
                     // add current tuple into block if it has same merge attribute
                     if (Tuple.compareTuples(refTuple, rightTuple, rightindex) == 0) {
-                        tempBlock.addTuple(rightTuple);
+                        tempBlock.add(rightTuple);
                         rcurs++;
                         if (rcurs == rightbatch.size()) {
                             rcurs = 0;
