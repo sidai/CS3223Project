@@ -232,37 +232,16 @@ public class SortMergeJoin extends Join {
 
     public Batch next() {
         System.out.println("SortMergeJoin:-----------------in next--------------");
-        // right or left batch has proceeded, handle remaining data in the tempBlock if exists
-        if (eos) {
-            if(tempBlock != null && !tempBlock.isEmpty()) {
-                outbatch = new Batch(batchsize);
-                while (!outbatch.isFull()) {
-                    leftTuple = leftbatch.elementAt(lcurs);
-                    int diff = Tuple.compareTuples(leftTuple, refTuple, leftindex, rightindex);
-                    if (diff < 0) {
-                        lcurs++;
-                        if (lcurs == leftbatch.size()) {
-                            leftbatch = sortedLeft.next();
-                            lcurs = 0;
-                            if (leftbatch == null) {
-                                eos = true;
-                                // complete, clear all buffer
-                                tempBlock.clear();
-                                return outbatch;
-                            }
-                        }
-                    } else if (diff == 0) {
-                        System.out.println("size: " + tempcurs + " " + tempBlock.size());
-                        while (tempcurs < tempBlock.size()) {
-                            outbatch.add(leftTuple.joinWith((Tuple) tempBlock.get(tempcurs)));
-                            tempcurs++;
-                            // return when outbatch is full, leftover will be handled at the start of the next run
-                            if (outbatch.isFull()) {
-                                return outbatch;
-                            }
-                        }
-                        if (tempcurs == tempBlock.size()) {
-                            tempcurs = 0;
+
+        outbatch = new Batch(batchsize);
+        while (!outbatch.isFull()) {
+            // right or left batch has proceeded, handle remaining data in the tempBlock if exists
+            if (eos) {
+                if(tempBlock != null && !tempBlock.isEmpty()) {
+                    while (!outbatch.isFull()) {
+                        leftTuple = leftbatch.elementAt(lcurs);
+                        int diff = Tuple.compareTuples(leftTuple, refTuple, leftindex, rightindex);
+                        if (diff < 0) {
                             lcurs++;
                             if (lcurs == leftbatch.size()) {
                                 leftbatch = sortedLeft.next();
@@ -274,21 +253,43 @@ public class SortMergeJoin extends Join {
                                     return outbatch;
                                 }
                             }
+                        } else if (diff == 0) {
+                            System.out.println("size: " + tempcurs + " " + tempBlock.size());
+                            while (tempcurs < tempBlock.size()) {
+                                outbatch.add(leftTuple.joinWith((Tuple) tempBlock.get(tempcurs)));
+                                tempcurs++;
+                                // return when outbatch is full, leftover will be handled at the start of the next run
+                                if (outbatch.isFull()) {
+                                    return outbatch;
+                                }
+                            }
+                            if (tempcurs == tempBlock.size()) {
+                                tempcurs = 0;
+                                lcurs++;
+                                if (lcurs == leftbatch.size()) {
+                                    leftbatch = sortedLeft.next();
+                                    lcurs = 0;
+                                    if (leftbatch == null) {
+                                        eos = true;
+                                        // complete, clear all buffer
+                                        tempBlock.clear();
+                                        return outbatch;
+                                    }
+                                }
+                            }
+                        } else if (diff > 0) {
+                            tempBlock.clear();
+                            tempcurs = 0;
+                            return outbatch;
                         }
-                    } else if (diff > 0) {
-                        tempBlock.clear();
-                        tempcurs = 0;
-                        return outbatch;
                     }
+                } else {
+                    close();
+                    return null;
                 }
-            } else {
-                close();
-                return null;
             }
-        }
 
-        outbatch = new Batch(batchsize);
-        while (!outbatch.isFull()) {
+
             leftTuple = leftbatch.elementAt(lcurs);
             System.out.print("tuple at "+ lcurs + ": ");
             for(int i=0; i<leftTuple._data.size(); i++) {
@@ -402,44 +403,20 @@ public class SortMergeJoin extends Join {
                 while (Tuple.compareTuples(leftTuple, rightTuple, leftindex, rightindex) > 0) {
                     rcurs++;
                     if (rcurs == rightbatch.size()) {
-                        System.out.println("size equal: " + rcurs + " " + rightbatch.size());
+//                        System.out.println("size equal: " + rcurs + " " + rightbatch.size());
                         rcurs = 0;
                         rightbatch = sortedRight.next();
                         if(rightbatch == null) {
                             eos = true;
                             break;
                         }
-                        System.out.println("========LOADING right batch 3=======");
-                        for (int j = 0; j < rightbatch.size(); j++) {
-                            Tuple present = rightbatch.elementAt(j);
-                            System.out.print("tuple: ");
-                            for(int i=0; i<present._data.size(); i++) {
-                                System.out.print(present.dataAt(i) + " ");
-                            }
-                            System.out.println();
-                        }
-                        System.out.println("=======done right batch=======");
-                        System.out.println();
-                        if (rightbatch==null) {
-                            eos = true;
-                            System.out.println("=========bigger out batch==============");
-                            try {
-                                for (int j = 0; j < outbatch.size(); j++) {
-                                    Tuple present = outbatch.elementAt(j);
-                                    System.out.print("tuple: ");
-                                    for(int i=0; i<present._data.size(); i++) {
-                                        System.out.print(present.dataAt(i) + " ");
-                                    }
-                                    System.out.println();
-                                }
-                                System.out.println();
-                            } catch (Exception e) {
-                                System.err.println(" Error reading ");
-                            }
-                            return outbatch;
-                        }
                     }
                     rightTuple = rightbatch.elementAt(rcurs);
+                }
+                // no more right batch data smaller than left batch, break outer loop to return results
+                if(rightbatch == null) {
+                    eos = true;
+                    break;
                 }
                 refTuple = rightbatch.elementAt(rcurs);
                 // store the next group of tuples from right operation that are not smaller than leftTuple
@@ -475,20 +452,20 @@ public class SortMergeJoin extends Join {
                 }
             }
         }
-        System.out.println("=========out batch==============");
-        try {
-            for (int j = 0; j < outbatch.size(); j++) {
-                Tuple present = outbatch.elementAt(j);
-                System.out.print("tuple: ");
-                for(int i=0; i<present._data.size(); i++) {
-                    System.out.print(present.dataAt(i) + " ");
-                }
-                System.out.println();
-            }
-            System.out.println();
-        } catch (Exception e) {
-            System.err.println(" Error reading ");
-        }
+//        System.out.println("=========out batch==============");
+//        try {
+//            for (int j = 0; j < outbatch.size(); j++) {
+//                Tuple present = outbatch.elementAt(j);
+//                System.out.print("tuple: ");
+//                for(int i=0; i<present._data.size(); i++) {
+//                    System.out.print(present.dataAt(i) + " ");
+//                }
+//                System.out.println();
+//            }
+//            System.out.println();
+//        } catch (Exception e) {
+//            System.err.println(" Error reading ");
+//        }
 
         return outbatch;
     }
