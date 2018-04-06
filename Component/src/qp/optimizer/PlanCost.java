@@ -99,6 +99,12 @@ public class PlanCost {
      **/
 
     protected int getStatistics(Distinct node) {
+        int tuples=calculateCost(node.getBase());
+        Schema schema=node.getSchema();
+        int bufferSize=BufferManager.getBuffers();
+        int passes=1+(int) Math.ceil(Math.log( Math.ceil( (double) tuples/ (double) bufferSize))/Math.log( (double) bufferSize-1.0));
+        int result=passes*2*tuples;
+        cost=cost+result;
         return calculateCost(node.getBase());
     }
 
@@ -107,6 +113,12 @@ public class PlanCost {
      **/
 
     protected int getStatistics(GroupBy node) {
+        int tuples=calculateCost(node.getBase());
+        Schema schema=node.getSchema();
+        int bufferSize=BufferManager.getBuffers();
+        int passes=1+(int) Math.ceil(Math.log( Math.ceil( (double) tuples/ (double) bufferSize))/Math.log( (double) bufferSize-1.0));
+        int result=passes*2*tuples;
+        cost=cost+result;
         return calculateCost(node.getBase());
     }
 
@@ -185,8 +197,9 @@ public class PlanCost {
                 break;
             case JoinType.BLOCKNESTED:
                 //TODO: BUG
-                //joincost = 0;
+               // joincost = Integer.MAX_VALUE-600000;
                 joincost = calculateBNLJCost(leftpages, rightpages, numbuff);
+
                 break;
             case JoinType.SORTMERGE:
                 //TODO: BUG

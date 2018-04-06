@@ -3,6 +3,7 @@
  **********/
 package qp.utils;
 
+import java.sql.Time;
 import java.util.Vector;
 import java.io.Serializable;
 
@@ -102,6 +103,8 @@ public class Tuple implements Serializable {
             
         } else if (leftdata instanceof Float) {
             return ((Float) leftdata).compareTo((Float) rightdata);
+        } else if (leftdata instanceof Time){
+            return ((Time) leftdata).compareTo((Time) rightdata);
         } else {
             System.out.println("Tuple: Unknown comparision of the tuples");
             System.exit(1);
