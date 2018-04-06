@@ -13,6 +13,7 @@ public class Attribute implements Serializable {
     public static final int INT = 1;
     public static final int STRING = 2;
     public static final int REAL = 3;
+    public static final int TIME = 4;
     
     /** enumeration of type of key **/
     
@@ -25,7 +26,8 @@ public class Attribute implements Serializable {
     int type;  // whether integer or real or string
     int key = -1;   // type of the key
     int attrsize;   // Number of bytes for this attribute
-
+    
+    
     public Attribute(String tbl, String col) {
         tblname = tbl;
         colname = col;

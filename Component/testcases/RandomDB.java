@@ -1,4 +1,5 @@
 
+import java.sql.Time;
 import java.util.*;
 import java.io.*;
 import qp.utils.*;
@@ -31,6 +32,8 @@ private static Random random;
     public static void main(String[] args){
 
 		RandomDB rdb = new RandomDB();
+		final Random random = new Random();
+		final int millisInDay = 24*60*60*1000;
 
 	if(args.length !=2){
 	    System.out.println("Usage: java RandomDB <dbname> <numrecords> ");
@@ -94,7 +97,10 @@ private static Random random;
 				    // System.out.println("String");
 		}else if(datatype[i].equals("REAL")){
 			type=Attribute.REAL;
-		}else{
+		}else if(datatype[i].equals("TIME")){
+			type=Attribute.TIME;
+		}
+		else{
 		    type=-1;
 		    System.err.println("invalid data type");
 		    System.exit(1);
@@ -147,7 +153,11 @@ private static Random random;
 		    if(datatype[j].equals("STRING")){
 			String temp = rdb.randString(range[j]);
 			outtbl.print(temp+"\t");
-		    }else if(datatype[j].equals("FLOAT")){
+		    }else if(datatype[j].equals("TIME")){
+		    	Time time = new Time((long)random.nextInt(millisInDay));
+		    	outtbl.print(time+"\t");
+			}
+		    else if(datatype[j].equals("FLOAT")){
 			float value = range[j]*random.nextFloat();
 			outtbl.print(value+"\t");
 		    }else if(datatype[j].equals("INTEGER")){
@@ -174,7 +184,10 @@ private static Random random;
 		    outstat.print(numtuple+"\t");
 		}else if(datatype[i].equals("FLOAT")){
 		    outstat.print(numtuple+"\t");
-		}else if(datatype[i].equals("INTEGER")){
+		}else if (datatype[i].equals("TIME")){
+			outstat.print(numtuple+"\t");
+		}
+		else if(datatype[i].equals("INTEGER")){
 		    if(keytype[i].equals("PK")){
 			int numdist = rdb.getnumdistinct(pk);
 			outstat.print(numdist+"\t");
