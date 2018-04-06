@@ -13,7 +13,7 @@ public class Debug {
     public static void PPrint(Attribute attr) {
         String tabname = attr.getTabName();
         String colname = attr.getColName();
-        System.out.print(tabname + "." + colname + " ");
+        System.out.print(tabname + "." + colname + "");
     }
 
     /** print schema **/
@@ -21,9 +21,9 @@ public class Debug {
     public static void PPrint(Aggregation aggregation) {
         if(aggregation != null) {
             Attribute attribute = aggregation.getAttribute();
-            System.out.println(aggregation.getName() + "(");
+            System.out.print(aggregation.getName() + "(");
             PPrint(attribute);
-            System.out.println(aggregation.getName() + ")");
+            System.out.println(")");
         }
     }
     
@@ -36,22 +36,22 @@ public class Debug {
         PPrint(lhs);
         switch (exprtype) {
             case Condition.LESSTHAN:
-                System.out.print("<");
+                System.out.print("< ");
                 break;
             case Condition.GREATERTHAN:
-                System.out.print(">");
+                System.out.print(" > ");
                 break;
             case Condition.LTOE:
-                System.out.print("<=");
+                System.out.print(" <= ");
                 break;
             case Condition.GTOE:
-                System.out.print(">=");
+                System.out.print(" >= ");
                 break;
             case Condition.EQUAL:
-                System.out.print("==");
+                System.out.print(" == ");
                 break;
             case Condition.NOTEQUAL:
-                System.out.print("!=");
+                System.out.print(" != ");
                 break;
         }
         
@@ -66,9 +66,13 @@ public class Debug {
     /** print schema **/
     
     public static void PPrint(Schema schema) {
+        Aggregation aggregation = schema.getAggregation();
+        if(aggregation != null) {
+            PPrint(aggregation);
+        }
         for (int i = 0; i < schema.getNumCols(); i++) {
-            Attribute attr = schema.getAttribute(i);
-            PPrint(attr);
+            System.out.print(" ");
+            PPrint(schema.getAttribute(i));
         }
         System.out.println();
     }
@@ -112,7 +116,6 @@ public class Debug {
 
         } else if (optype == OpType.PROJECT) {
             System.out.print("Project(");
-            Aggregation aggregation = ((Project) node).getAggregation();
             PPrint(((Project) node).getBase());
             System.out.print(")");
         } else if (optype == OpType.DISTINCT) {

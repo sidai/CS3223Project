@@ -108,8 +108,6 @@ public class Tuple implements Serializable {
             return 0;
         }
     }
-    
-    
 }
 
 

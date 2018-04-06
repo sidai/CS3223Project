@@ -1,9 +1,8 @@
-package qp.parser;
-
 import java_cup.runtime.Symbol;  // definition of scanner/parser interface
+import java.util.*;
 
 
-public class Scaner implements java_cup.runtime.Scanner {
+public class Yylex implements java_cup.runtime.Scanner {
 	private final int YY_BUFFER_SIZE = 512;
 	private final int YY_F = -1;
 	private final int YY_NO_STATE = -1;
@@ -24,7 +23,7 @@ public class Scaner implements java_cup.runtime.Scanner {
 	private boolean yy_at_bol;
 	private int yy_lexical_state;
 
-	public Scaner(java.io.Reader reader) {
+	public Yylex (java.io.Reader reader) {
 		this ();
 		if (null == reader) {
 			throw (new Error("Error: Bad input stream initializer."));
@@ -32,7 +31,7 @@ public class Scaner implements java_cup.runtime.Scanner {
 		yy_reader = new java.io.BufferedReader(reader);
 	}
 
-	public Scaner(java.io.InputStream instream) {
+	public Yylex (java.io.InputStream instream) {
 		this ();
 		if (null == instream) {
 			throw (new Error("Error: Bad input stream initializer."));
@@ -40,7 +39,7 @@ public class Scaner implements java_cup.runtime.Scanner {
 		yy_reader = new java.io.BufferedReader(new java.io.InputStreamReader(instream));
 	}
 
-	private Scaner() {
+	private Yylex () {
 		yy_buffer = new char[YY_BUFFER_SIZE];
 		yy_buffer_read = 0;
 		yy_buffer_index = 0;
@@ -142,8 +141,8 @@ public class Scaner implements java_cup.runtime.Scanner {
 		             2028/*LS*/ == yy_buffer[yy_buffer_end-1] ||
 		             2029/*PS*/ == yy_buffer[yy_buffer_end-1]);
 	}
-	private String yytext () {
-		return (new String(yy_buffer,
+	private java.lang.String yytext () {
+		return (new java.lang.String(yy_buffer,
 			yy_buffer_start,
 			yy_buffer_end - yy_buffer_start));
 	}
@@ -161,13 +160,13 @@ public class Scaner implements java_cup.runtime.Scanner {
 	}
 	private final int YY_E_INTERNAL = 0;
 	private final int YY_E_MATCH = 1;
-	private String yy_error_string[] = {
+	private java.lang.String yy_error_string[] = {
 		"Error: Internal error.\n",
 		"Error: Unmatched input.\n"
 	};
 	private void yy_error (int code,boolean fatal) {
-		System.out.print(yy_error_string[code]);
-		System.out.flush();
+		java.lang.System.out.print(yy_error_string[code]);
+		java.lang.System.out.flush();
 		if (fatal) {
 			throw new Error("Fatal Error.\n");
 		}
@@ -314,7 +313,7 @@ public class Scaner implements java_cup.runtime.Scanner {
 "59,-1:12,59:17,41,59:4,-1:2,59,32,-1:6,59,-1:12,59:21,42,-1:2,59,32,-1:6,59" +
 ",-1:12,59:2,61,59:19,-1:2,59,32,-1:6,59,-1:11");
 
-	public Symbol next_token ()
+	public java_cup.runtime.Symbol next_token ()
 		throws java.io.IOException {
 		int yy_lookahead;
 		int yy_anchor = YY_NO_ANCHOR;

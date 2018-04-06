@@ -12,7 +12,8 @@ public class Schema implements Serializable {
     
     Vector attset; // the attributes belong to this schema
     int tuplesize; // Number of bytes required for this tuple (size of record)
-    
+    Aggregation aggregation;
+
     public Schema(Vector colset) {
         attset = colset;
     }
@@ -32,6 +33,14 @@ public class Schema implements Serializable {
     
     public void add(Attribute attr) {
         attset.add(attr);
+    }
+
+    public void setAggregation(Aggregation aggregation) {
+        this.aggregation = aggregation;
+    }
+
+    public Aggregation getAggregation() {
+        return this.aggregation;
     }
     
     public Vector getAttList() {

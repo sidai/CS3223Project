@@ -14,8 +14,6 @@ public class Project extends Operator {
     Vector attrSet;
     int batchsize;  // number of tuples per outbatch
 
-    Aggregation aggregation; // aggregation besides attribute set to be projected
-
     /** The following fields are requied during execution
      ** of the Project Operator
      **/
@@ -30,11 +28,10 @@ public class Project extends Operator {
     int[] attrIndex;
 
 
-    public Project(Operator base, Vector as, int type, Aggregation aggregation) {
+    public Project(Operator base, Vector as, int type) {
         super(type);
         this.base = base;
         this.attrSet = as;
-        this.aggregation = aggregation;
     }
 
     public void setBase(Operator base) {
@@ -56,14 +53,18 @@ public class Project extends Operator {
 
     public boolean open() {
         //System.out.println("Project:-----------------in open-----------------");
-        /** setnumber of tuples per batch **/
-        int tuplesize = schema.getTupleSize();
-        batchsize = Batch.getPageSize() / tuplesize;
-
-
         /** The followingl loop findouts the index of the columns that
          ** are required from the base operator
          **/
+
+        /** setnumber of tuples per batch **/
+        int tuplesize = schema.getTupleSize();
+        if (base instanceof GroupBy) {
+            schema.setAggregation(((GroupBy) base).getAggregation());
+            attrSet = ((GroupBy) base).getAttrSet();
+            tuplesize += 4;     // preserve 4 bytes for int
+        }
+        batchsize = Batch.getPageSize() / tuplesize;
 
         Schema baseSchema = base.getSchema();
         attrIndex = new int[attrSet.size()];
@@ -98,7 +99,6 @@ public class Project extends Operator {
         inbatch = base.next();
         // System.out.println("Project:-------------- inside the next---------------");
 
-
         if (inbatch == null) {
             return null;
         }
@@ -109,7 +109,7 @@ public class Project extends Operator {
             //System.out.println();
             Vector present = new Vector();
             /** add aggregated value in front of the output **/
-            if (aggregation != null) {
+            if (schema.getAggregation() != null) {
                 present.add(basetuple.getLastData());
             }
             for (int j = 0; j < attrSet.size(); j++) {
@@ -139,17 +139,10 @@ public class Project extends Operator {
         Vector newattr = new Vector();
         for (int i = 0; i < attrSet.size(); i++)
             newattr.add((Attribute) ((Attribute) attrSet.elementAt(i)).clone());
-        Project newproj = new Project(newbase, newattr, optype, aggregation);
+        Project newproj = new Project(newbase, newattr, optype);
         Schema newSchema = newbase.getSchema().subSchema(newattr);
         newproj.setSchema(newSchema);
         return newproj;
     }
 
-    public Aggregation getAggregation() {
-        return aggregation;
-    }
-
-    public void setAggregation(Aggregation aggregation) {
-        this.aggregation = aggregation;
-    }
 }

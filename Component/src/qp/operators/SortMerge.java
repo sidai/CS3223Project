@@ -323,9 +323,6 @@ public class SortMerge extends Operator {
                 if (batch.isEmpty()) {
                     batch = getNextBatch(inputStreams.get(runNum));
                     inputBatches.set(runNum, batch);
-                    if (batch == null) {
-                        System.out.println("run " + runNum + " has been completely processed");
-                    }
                 }
             }
             //add the leftover in output buffer

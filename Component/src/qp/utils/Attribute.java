@@ -25,8 +25,7 @@ public class Attribute implements Serializable {
     int type;  // whether integer or real or string
     int key = -1;   // type of the key
     int attrsize;   // Number of bytes for this attribute
-    
-    
+
     public Attribute(String tbl, String col) {
         tblname = tbl;
         colname = col;

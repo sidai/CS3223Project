@@ -207,8 +207,6 @@ public class QueryMain{
             System.exit(1);
         }
     
-    
-    
         /** print the schema of the result **/
         Schema schema = root.getSchema();
         numAtts = schema.getNumCols();
@@ -231,13 +229,16 @@ public class QueryMain{
     
     
     protected static void printTuple(Tuple t){
-        for(int i=0;i<numAtts;i++){
+        for(int i=0;i<t._data.size();i++){
             Object data = t.dataAt(i);
             if(data instanceof Integer){
+//                System.out.print(((Integer)data).intValue()+"\t");
                 out.print(((Integer)data).intValue()+"\t");
             }else if(data instanceof Float){
+//                System.out.print(((Float)data).floatValue()+"\t");
                 out.print(((Float)data).floatValue()+"\t");
             }else{
+//                System.out.print(data +"\t");
                 out.print(data +"\t");
             }
         }
@@ -245,9 +246,16 @@ public class QueryMain{
     }
     
     protected static void printSchema(Schema schema){
-        for(int i=0;i<numAtts;i++){
+        Aggregation aggr = schema.getAggregation();
+        if(aggr != null) {
+//            System.out.print("aggr: " + aggr.getName() + "(" + aggr.getAttribute().getTabName() + "." +
+//                    aggr.getAttribute().getColName() + ") ");
+            out.print(aggr.getName() + "(" + aggr.getAttribute().getTabName() + "." +
+                    aggr.getAttribute().getColName() + ") ");
+        }
+        for(int i=0;i<schema.getNumCols();i++){
             Attribute attr = schema.getAttribute(i);
-            out.print(attr.getTabName()+"."+attr.getColName()+"  ");
+            out.print(attr.getTabName() + "." + attr.getColName() + "  ");
         }
         out.println();
     }

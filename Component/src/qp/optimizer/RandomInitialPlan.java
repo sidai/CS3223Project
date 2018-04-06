@@ -198,9 +198,10 @@ public class RandomInitialPlan {
         if (projectlist == null)
             projectlist = new Vector();
         
-        if (!projectlist.isEmpty()) {
-            root = new Project(base, projectlist, OpType.PROJECT, aggregation);
+        if (!projectlist.isEmpty() || aggregation != null) {
+            root = new Project(base, projectlist, OpType.PROJECT);
             Schema newSchema = base.getSchema().subSchema(projectlist);
+            newSchema.setAggregation(aggregation);
             root.setSchema(newSchema);
         }
     }

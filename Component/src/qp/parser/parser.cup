@@ -37,11 +37,12 @@ action code {:
 
 /* Terminals (tokens returned by the scanner). */
 terminal 	TokenValue ID;
+terminal    AND,OR;
 terminal    COMMA,SEMI,DOT,STAR,LPAREN,RPAREN;
-terminal    LESSTHAN, GREATERTHAN,LTOE,GTOE,EQUAL,NOTEQUAL,AND,OR;
+terminal    LESSTHAN, GREATERTHAN,LTOE,GTOE,EQUAL,NOTEQUAL;
 terminal	SELECT,FROM,WHERE,GROUPBY,DISTINCT;
 terminal 	TokenValue STRINGLIT;
-terminal    COUNT1 , AVG , MAX , MIN , SUM ;
+terminal    COUNT,AVG,MAX,MIN,SUM;
 
 /* Non terminals */	
 nonterminal SQLQuery sqlquery;
@@ -55,15 +56,48 @@ nonterminal Aggregation aggregation;
 
 /* The grammar */
 
-sqlquery ::= sqlquery:s  GROUPBY attlist:a
+sqlquery ::= sqlquery:s GROUPBY attrlist:a
 		{:
 		    s.setGroupByList(a);
 		    parser.query=s;
 		:}
 
-        | SELECT attlist:a FROM tablelist:t
+		| SELECT aggregation:ag FROM tablelist:t
+		{:
+		    Vector a= new Vector();
+            SQLQuery sq = new SQLQuery(a,t);
+            sq.setAggregation(ag);
+            parser.query=sq;
+            RESULT=sq;
+        :}
+
+		| SELECT aggregation:ag FROM tablelist:t WHERE conditionlist:c
+		{:
+		    Vector a = new Vector();
+            SQLQuery sq = new SQLQuery(a,t,c);
+            sq.setAggregation(ag);
+            parser.query=sq;
+            RESULT=sq;
+        :}
+
+        | SELECT aggregation:ag COMMA attrlist:a FROM tablelist:t
         {:
-            Vector v1= new Vector();
+            SQLQuery sq = new SQLQuery(a,t);
+            sq.setAggregation(ag);
+            parser.query=sq;
+            RESULT=sq;
+        :}
+
+	    | SELECT aggregation:ag COMMA attrlist:a FROM tablelist:t WHERE conditionlist:c
+		{:
+            SQLQuery sq = new SQLQuery(a,t,c);
+            sq.setAggregation(ag);
+            parser.query=sq;
+            RESULT=sq;
+		:}
+
+        | SELECT attrlist:a FROM tablelist:t
+        {:
             SQLQuery sq = new SQLQuery(a,t);
             parser.query=sq;
             RESULT=sq;
@@ -77,7 +111,7 @@ sqlquery ::= sqlquery:s  GROUPBY attlist:a
             RESULT=sq;
         :}
 
-        | SELECT DISTINCT attlist:a FROM tablelist:t
+        | SELECT DISTINCT attrlist:a FROM tablelist:t
         {:
            Vector v1= new Vector();
            SQLQuery sq = new SQLQuery(a,t);
@@ -94,7 +128,7 @@ sqlquery ::= sqlquery:s  GROUPBY attlist:a
             RESULT=sq;
 		:}
 
-	    | SELECT attlist:a FROM tablelist:t WHERE conditionlist:c
+	    | SELECT attrlist:a FROM tablelist:t WHERE conditionlist:c
 		{:
             Vector v1= new Vector();
             SQLQuery sq = new SQLQuery(a,t,c);
@@ -102,7 +136,7 @@ sqlquery ::= sqlquery:s  GROUPBY attlist:a
             RESULT=sq;
 		:}
 
-		| SELECT DISTINCT attlist:a FROM tablelist:t WHERE conditionlist:c
+		| SELECT DISTINCT attrlist:a FROM tablelist:t WHERE conditionlist:c
 		{:
              Vector v1= new Vector();
              SQLQuery sq = new SQLQuery(a,t,c);
@@ -110,23 +144,9 @@ sqlquery ::= sqlquery:s  GROUPBY attlist:a
              parser.query=sq;
              RESULT=sq;
 		:}
-
 		;
 
-attlist ::=	aggregation:ag COMMA attlist:as
-         {:
-              as.add((Aggregation) ag);
-              RESULT=as;
-          :}
-
-         |aggregation:ag
-          {:
-             Vector v = new Vector();
-             v.add((Aggregation) ag);
-             RESULT=v;
-          :}
-
-        |attribute:a COMMA attlist:as
+attrlist ::= attribute:a COMMA attrlist:as
 	    {:
 	        as.add(a);
 	        RESULT=as;
@@ -138,8 +158,6 @@ attlist ::=	aggregation:ag COMMA attlist:as
             v.add(at);
             RESULT = v;
 		:}
-
-
         ;
 
 tablelist ::= tablelist:tlist COMMA ID:i
@@ -241,17 +259,17 @@ op::= 	LESSTHAN
         :}
         ;
 
-aggregation::= COUNT1 LPAREN STAR RPAREN
+aggregation::= COUNT LPAREN STAR RPAREN
         {:
             RESULT=new Aggregation(Aggregation.COUNT);
         :}
 
-        |COUNT LPAREN  attribute:a RPAREN
+        |COUNT LPAREN attribute:a RPAREN
          {:
              RESULT=new Aggregation(a, Aggregation.COUNT);
          :}
 
-        |AVG LPAREN  attribute:a PRPAREN
+        |AVG LPAREN attribute:a RPAREN
         {:
             RESULT=new Aggregation(a, Aggregation.AVG);
         :}
@@ -261,12 +279,12 @@ aggregation::= COUNT1 LPAREN STAR RPAREN
             RESULT=new Aggregation(a, Aggregation.MAX);
         :}
 
-        |MIN LPAREN   attribute:a RPAREN
+        |MIN LPAREN attribute:a RPAREN
         {:
             RESULT=new Aggregation(a, Aggregation.MIN);
         :}
 
-        |SUM LPAREN  attribute:a RPAREN
+        |SUM LPAREN attribute:a RPAREN
         {:
             RESULT=new Aggregation(a, Aggregation.SUM);
         :}
