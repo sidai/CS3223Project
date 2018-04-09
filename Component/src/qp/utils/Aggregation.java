@@ -1,3 +1,6 @@
+/**
+ * Aggregation class, implements aggregation methods
+ */
 package qp.utils;
 
 public class Aggregation {

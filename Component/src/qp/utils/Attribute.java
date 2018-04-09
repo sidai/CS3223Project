@@ -13,6 +13,7 @@ public class Attribute implements Serializable {
     public static final int INT = 1;
     public static final int STRING = 2;
     public static final int REAL = 3;
+    // add one more attribute type for experiment
     public static final int TIME = 4;
     
     /** enumeration of type of key **/
@@ -21,7 +22,7 @@ public class Attribute implements Serializable {
     public static final int FK = 2;   // Foreign key
     
     
-    String tblname;        //tabel to which this attribute belongs
+    String tblname;        //table to which this attribute belongs
     String colname;         //name of the attribute **/
     int type;  // whether integer or real or string
     int key = -1;   // type of the key

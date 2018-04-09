@@ -1,3 +1,6 @@
+/**
+ * Class that contains a vector of pages and a vector of tuples that inside those pages
+ */
 package qp.utils;
 
 import java.io.Serializable;

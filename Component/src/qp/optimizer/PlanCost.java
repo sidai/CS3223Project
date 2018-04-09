@@ -71,7 +71,6 @@ public class PlanCost {
         if (node.getOpType() == OpType.JOIN) {
             return getStatistics((Join) node);
         } else if (node.getOpType() == OpType.SELECT) {
-            //System.out.println("PlanCost: line 40");
             return getStatistics((Select) node);
         } else if (node.getOpType() == OpType.PROJECT) {
             return getStatistics((Project) node);
@@ -191,23 +190,17 @@ public class PlanCost {
 
         switch (joinType) {
             case JoinType.NESTEDJOIN:
-                //TODO: BUG
                 //joincost = leftpages * rightpages;
                 joincost = calculateNLJCost(leftpages, rightpages);
                 break;
             case JoinType.BLOCKNESTED:
-                //TODO: BUG
                // joincost = Integer.MAX_VALUE-600000;
                 joincost = calculateBNLJCost(leftpages, rightpages, numbuff);
-
                 break;
             case JoinType.SORTMERGE:
-                //TODO: BUG
-                //joincost = 0;
                 joincost = calculateSMJCost(leftpages, rightpages, numbuff);
                 break;
             case JoinType.HASHJOIN:
-                //TODO: BUG
                 joincost = calculateHashJoinCost(leftpages, rightpages);
                 break;
             case JoinType.INDEXNESTED:
@@ -218,18 +211,6 @@ public class PlanCost {
                 joincost = 0;
                 break;
         }
-//        System.out.print("Join type: " + node.getJoinType() + "  Condition: ");
-//        Debug.PPrint(node.getCondition());
-//        System.out.println();
-//        System.out.println("in_left, right: " + lefttuples + " " + righttuples);
-//        System.out.print("leftSchema (tuplesize: " + leftuplesize + "): ");
-//        Debug.PPrint(leftschema);
-//        System.out.print("rightSchema (tuplesize: " + righttuplesize + "): ");
-//        Debug.PPrint(rightschema);
-//        System.out.println("capacity_left, right: " + leftcapacity + " " + rightcapacity);
-//        System.out.println("leftpage, rightpages, buff: " + leftpages + " " + rightpages + " " + numbuff);
-//        System.out.println("in_dist_left, right: " + leftattrdistn + " " + rightattrdistn);
-//        System.out.println("joincost: " + joincost + " - outtuples: " + outtuples + " - distinct: " + mindistinct);
         cost = cost + joincost;
         return outtuples;
     }

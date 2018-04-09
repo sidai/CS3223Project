@@ -1,3 +1,8 @@
+/**
+ * To gather the tuples with the same value of specified attribute or attribute set into one group
+ * Often used with aggregation statement
+ * Sort the table and compare with neighboring tuples
+ */
 package qp.operators;
 
 import qp.utils.Aggregation;
@@ -9,12 +14,11 @@ import qp.utils.Tuple;
 import java.util.Vector;
 
 public class GroupBy extends SortMerge {
-
     Aggregation aggregation;
 
     Batch inbatch;
     Batch outbatch;
-    boolean eos;    // Indicate whether end of stream is reached or not
+    boolean eos;     // Indicate whether end of stream is reached or not
     Tuple lastTuple;
     int start;       // Cursor position in the input buffer
     int aggrIndex;
@@ -23,8 +27,12 @@ public class GroupBy extends SortMerge {
         super(base, as, type);
         this.aggregation = aggregation;
     }
-
-
+    
+    /**
+     * Set the schema and initialize the cursor and eos status
+     *
+     * @return whether it is okay to start fetching the result of GroupBy
+     */
     @Override
     public boolean open() {
         eos = false;
@@ -42,21 +50,22 @@ public class GroupBy extends SortMerge {
             return null;
         }
 
-        /** An output buffer is initiated**/
+        // An output buffer is initiated
         outbatch = new Batch(batchSize);
-        /** no aggregation required, treated as distinct **/
+        
+        // no aggregation required, treated as distinct
         if (this.aggregation == null) {
-            /** keep on checking the incoming pages until the output buffer is full **/
+            // keep on checking the incoming pages until the output buffer is full
             while (!outbatch.isFull()) {
                 if (start == 0) {
                     inbatch = super.next();
-                    /** There is no more incoming pages from base operator **/
+                    // There is no more incoming pages from base operator
                     if (inbatch == null) {
                         eos = true;
                         return outbatch;
                     }
                 }
-                /** Continue this for loop until this page is fully observed or the output buffer is full **/
+                // Continue this for loop until this page is fully observed or the output buffer is full
                 for (i = start; i < inbatch.size() && (!outbatch.isFull()); i++) {
                     Tuple basetuple = inbatch.elementAt(i);
                     if (lastTuple == null || Tuple.compareTuples(lastTuple, basetuple, attrIndex) != 0) {
@@ -69,23 +78,19 @@ public class GroupBy extends SortMerge {
                         lastTuple = basetuple;
                     }
                 }
-                /** Modify the cursor to the position required when the base operator is called next time**/
+                // Modify the cursor to the position required when the base operator is called next time
                 if (i == inbatch.size())
                     start = 0;
                 else
                     start = i;
             }
         }
-        // no group by attribute, return the only aggregated value that loops over the whole table as a group
+        // no group by attribute, only group by, return the only aggregated value that loops over the whole table as a group
         else if (this.attrSet.isEmpty()) {
             int aggregationType = aggregation.getAggregationType();
             Attribute attr = aggregation.getAttribute();
-//            System.out.println("TYPE: " + attr.getType() + " " + Attribute.INT);
-//            if(attr.getType() != Attribute.INT && aggregationType != Aggregation.COUNT) {
-//                System.out.println("Aggregation of " + aggregation.getName() + " required a integer object");
-//                System.exit(1);
-//            }
-            /** int[] param: [count, sum, max, min] **/
+            
+            // int[] param: [count, sum, max, min]
             int[] param = {0, 0, 0, Integer.MAX_VALUE};
             while (true) {
                 inbatch = super.next();
@@ -102,45 +107,26 @@ public class GroupBy extends SortMerge {
                 }
             }
         }
-        /** aggregation and group by attribute **/
+        //aggregation and group by attribute
         else {
-            /** keep on checking the incoming pages until the output buffer is full **/
+            // keep on checking the incoming pages until the output buffer is full
             int aggregationType = aggregation.getAggregationType();
             Attribute attr = aggregation.getAttribute();
-//            if(attr.getType() != Attribute.INT && aggregationType != Aggregation.COUNT) {
-//                System.out.println("Aggregation of " + aggregation.getName() + " required a integer object");
-//                System.exit(1);
-//            }
-            /** int[] param: [count, sum, max, min] **/
+            
+            // int[] param: [count, sum, max, min]
             int[] param = {0, 0, 0, Integer.MAX_VALUE};
             while (!outbatch.isFull()) {
                 if (start == 0) {
                     inbatch = super.next();
-                    /** There is no more incoming pages from base operator **/
+                    // There is no more incoming pages from base operator
                     if (inbatch == null) {
                         appendAggregatedValue(lastTuple, param, aggregationType);
                         outbatch.add(lastTuple);
-//                        System.out.print("out tuple: ");
-//                        for (int k = 0; k < lastTuple._data.size(); k++) {
-//                            System.out.print(lastTuple.dataAt(k) + " ");
-//                        }
-//                        System.out.println();
-//                        param[0] = param[1] = param[2];
-//                        param[3] = Integer.MAX_VALUE;
                         eos = true;
                         return outbatch;
                     }
-//                    System.out.println("========IN BATCH==============");
-//                    for (int j = 0; j < inbatch.size(); j++) {
-//                        Tuple present = inbatch.elementAt(j);
-//                        System.out.print("tuple: ");
-//                        for(int k=0; k<present._data.size(); k++) {
-//                            System.out.print(present.dataAt(k) + " ");
-//                        }
-//                        System.out.println();
-//                    }
                 }
-                /** Continue this for loop until this page is fully observed or the output buffer is full **/
+                // Continue this for loop until this page is fully observed or the output buffer is full
                 for (i = start; i < inbatch.size() && (!outbatch.isFull()); i++) {
                     Tuple present = inbatch.elementAt(i);
                     if (lastTuple == null || Tuple.compareTuples(lastTuple, present, attrIndex) == 0) { //same or start point
@@ -151,34 +137,20 @@ public class GroupBy extends SortMerge {
                     } else {
                         appendAggregatedValue(lastTuple, param, aggregationType);
                         outbatch.add(lastTuple);
-//                        System.out.print("out tuple: ");
-//                        for (int k = 0; k < lastTuple._data.size(); k++) {
-//                            System.out.print(lastTuple.dataAt(k) + " ");
-//                        }
-//                        System.out.println();
                         param[0] = param[1] = param[2];
                         param[3] = Integer.MAX_VALUE;
                         lastTuple = present;
                     }
                 }
-
-//                System.out.println("========OUT BATCH==============");
-//                for (int j = 0; j < outbatch.size(); j++) {
-//                    Tuple present = outbatch.elementAt(j);
-//                    System.out.print("tuple: ");
-//                    for(int k=0; k<present._data.size(); k++) {
-//                        System.out.print(present.dataAt(k) + " ");
-//                    }
-//                    System.out.println();
-//                }
-                /** Modify the cursor to the position required when the base operator is called next time**/
+                // Modify the cursor to the position required when the base operator is called next time
                 if (i == inbatch.size())
                     start = 0;
                 else
                     start = i;
             }
         }
-
+        
+        // print out the result batch to check whether group by is implemented correctly
         System.out.println("========GROUP BY==============");
         for (int j = 0; j < outbatch.size(); j++) {
             Tuple present = outbatch.elementAt(j);
@@ -204,7 +176,12 @@ public class GroupBy extends SortMerge {
             tuple.appendAggregatedValue(param[1]);
         }
     }
-    /** int[] param: [count, sum, max, min] **/
+    /* int[] param: [count, sum, max, min]
+     * Do the aggregation
+     * When SUM ==> increase the sum value
+     * MAX, MIN ==> compare current value with previous limit value
+     * AVG ==> increase sum and size
+     */
     protected void doAggregation (Tuple tuple, Attribute attr, int[] param, int aggregationType) {
         if (aggregationType == Aggregation.COUNT) {
             param[0]++;

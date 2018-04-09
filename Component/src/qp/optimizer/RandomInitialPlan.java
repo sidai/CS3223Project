@@ -1,7 +1,7 @@
 /**
- * prepares a random initial plan for the given SQL query  see the ReadMe file to understand this
- **/
-/** see the ReadMe file to understand this **/
+ * prepares a random initial plan for the given SQL query, see the ReadMe file to understand this
+ * see the ReadMe file to understand this
+ */
 
 package qp.optimizer;
 
