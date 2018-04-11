@@ -2,12 +2,8 @@ package qp.operators;
 
 import qp.utils.Attribute;
 import qp.utils.Batch;
-import qp.utils.Block;
 import qp.utils.RandNumb;
 import qp.utils.Tuple;
-
-import java.io.*;
-import java.util.ArrayList;
 import java.util.Vector;
 
 public class SortMergeJoin extends Join {

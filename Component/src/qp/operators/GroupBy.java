@@ -238,4 +238,13 @@ public class GroupBy extends SortMerge {
     public Vector getAttrSet() {
         return this.attrSet;
     }
+
+    public Object clone() {
+        Operator newbase = (Operator) base.clone();
+        Vector newAttr = (Vector) attrSet.clone();
+        Aggregation newAggr = (Aggregation) aggregation.clone();
+        GroupBy newGroupBy = new GroupBy(newbase, newAttr, newAggr, optype);
+        newGroupBy.setSchema(newbase.getSchema());
+        return newGroupBy;
+    }
 }

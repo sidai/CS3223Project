@@ -9,7 +9,9 @@ import java.io.Serializable;
 import java.util.Vector;
 
 public class Schema implements Serializable {
-    
+
+    private static final long serialVersionUID = -3337675779203165021L;
+
     Vector attset; // the attributes belong to this schema
     int tuplesize; // Number of bytes required for this tuple (size of record)
     Aggregation aggregation;
