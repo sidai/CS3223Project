@@ -101,7 +101,6 @@ public class GroupBy extends SortMerge {
                     outbatch.add(tuple);
                     param[0] = param[1] = param[2] = 0;
                     param[3] = Integer.MAX_VALUE;
-                    lastTuple = null;
                     return outbatch;
                 }
                 for (i = 0; i < inbatch.size(); i++) {
@@ -141,9 +140,12 @@ public class GroupBy extends SortMerge {
                     } else {
                         appendAggregatedValue(lastTuple, param, aggregationType);
                         outbatch.add(lastTuple);
-                        param[0] = param[1] = param[2] = 0;
-                        param[3] = Integer.MAX_VALUE;
-                        lastTuple = null;
+                        // add the new tuple into result
+                        param[0] = 1;
+                        if (aggregationType != Aggregation.COUNT) {
+                            param[1] = param[2] = param[3] = (int) present.dataAt(base.getSchema().indexOf(attr));
+                        }
+                        lastTuple = present;
                     }
                 }
                 // Modify the cursor to the position required when the base operator is called next time
