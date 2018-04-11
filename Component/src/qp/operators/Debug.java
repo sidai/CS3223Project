@@ -11,6 +11,10 @@ public class Debug {
     /* print the attribute **/
     
     public static void PPrint(Attribute attr) {
+        if(attr == null) {
+            System.out.print("*");
+            return;
+        }
         String tabname = attr.getTabName();
         String colname = attr.getColName();
         System.out.print(tabname + "." + colname + "");

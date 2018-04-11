@@ -99,6 +99,9 @@ public class GroupBy extends SortMerge {
                     Tuple tuple = new Tuple();
                     appendAggregatedValue(tuple, param, aggregationType);
                     outbatch.add(tuple);
+                    param[0] = param[1] = param[2] = 0;
+                    param[3] = Integer.MAX_VALUE;
+                    lastTuple = null;
                     return outbatch;
                 }
                 for (i = 0; i < inbatch.size(); i++) {
@@ -122,6 +125,9 @@ public class GroupBy extends SortMerge {
                     if (inbatch == null) {
                         appendAggregatedValue(lastTuple, param, aggregationType);
                         outbatch.add(lastTuple);
+                        param[0] = param[1] = param[2] = 0;
+                        param[3] = Integer.MAX_VALUE;
+                        lastTuple = null;
                         eos = true;
                         return outbatch;
                     }
@@ -137,8 +143,9 @@ public class GroupBy extends SortMerge {
                     } else {
                         appendAggregatedValue(lastTuple, param, aggregationType);
                         outbatch.add(lastTuple);
-                        param[0] = param[1] = param[2];
+                        param[0] = param[1] = param[2] = 0;
                         param[3] = Integer.MAX_VALUE;
+                        lastTuple = null;
                         lastTuple = present;
                     }
                 }
@@ -192,13 +199,14 @@ public class GroupBy extends SortMerge {
                     param[1] += value;
                     param[0]++;
                 } else if (aggregationType == Aggregation.MAX) {
-                    if (param[2] < value) {
+                    if (param[2] <= value) {
                         param[2] = value;
                     }
                 } else if (aggregationType == Aggregation.MIN) {
-                    if (param[3] > value) {
+                    if (param[3] >= value) {
                         param[3] = value;
                     }
+                    System.out.println("min is: " + param[3]);
                 } else if (aggregationType == Aggregation.SUM) {
                     param[1] += value;
                 }

@@ -248,10 +248,12 @@ public class QueryMain{
     protected static void printSchema(Schema schema){
         Aggregation aggr = schema.getAggregation();
         if(aggr != null) {
-//            System.out.print("aggr: " + aggr.getName() + "(" + aggr.getAttribute().getTabName() + "." +
-//                    aggr.getAttribute().getColName() + ") ");
-            out.print(aggr.getName() + "(" + aggr.getAttribute().getTabName() + "." +
-                    aggr.getAttribute().getColName() + ") ");
+            if(aggr.getAttribute() == null) {
+                out.print(aggr.getName() + "(*) ");
+            } else {
+                out.print(aggr.getName() + "(" + aggr.getAttribute().getTabName() + "." +
+                        aggr.getAttribute().getColName() + ") ");
+            }
         }
         for(int i=0;i<schema.getNumCols();i++){
             Attribute attr = schema.getAttribute(i);

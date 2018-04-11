@@ -60,8 +60,10 @@ public class Aggregation {
     }
 
     public Object clone() {
-        Attribute newAttribute = (Attribute) attribute.clone();
-
+        Attribute newAttribute = null;
+        if(attribute != null) {
+            newAttribute = (Attribute) attribute.clone();
+        }
         Aggregation newAggregation = new Aggregation(newAttribute, aggregationType);
         return newAggregation;
     }
