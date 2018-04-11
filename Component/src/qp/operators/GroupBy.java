@@ -22,6 +22,8 @@ public class GroupBy extends SortMerge {
     Tuple lastTuple;
     int start;       // Cursor position in the input buffer
     int aggrIndex;
+    // int[] param: [count, sum, max, min]
+    int[] param = {0, 0, 0, Integer.MAX_VALUE};
 
     public GroupBy(Operator base, Vector as, Aggregation aggregation, int type) {
         super(base, as, type);
@@ -89,9 +91,7 @@ public class GroupBy extends SortMerge {
         else if (this.attrSet.isEmpty()) {
             int aggregationType = aggregation.getAggregationType();
             Attribute attr = aggregation.getAttribute();
-            
-            // int[] param: [count, sum, max, min]
-            int[] param = {0, 0, 0, Integer.MAX_VALUE};
+
             while (true) {
                 inbatch = super.next();
                 if (inbatch == null) {
@@ -115,9 +115,7 @@ public class GroupBy extends SortMerge {
             // keep on checking the incoming pages until the output buffer is full
             int aggregationType = aggregation.getAggregationType();
             Attribute attr = aggregation.getAttribute();
-            
-            // int[] param: [count, sum, max, min]
-            int[] param = {0, 0, 0, Integer.MAX_VALUE};
+
             while (!outbatch.isFull()) {
                 if (start == 0) {
                     inbatch = super.next();
@@ -146,7 +144,6 @@ public class GroupBy extends SortMerge {
                         param[0] = param[1] = param[2] = 0;
                         param[3] = Integer.MAX_VALUE;
                         lastTuple = null;
-                        lastTuple = present;
                     }
                 }
                 // Modify the cursor to the position required when the base operator is called next time

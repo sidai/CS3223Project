@@ -217,6 +217,9 @@ public class RandomInitialPlan {
             root.setSchema(newSchema);
         }
         if(isDistinct) {
+            if(projectlist == null || projectlist.isEmpty()) {
+                projectlist = base.getSchema().getAttList();
+            }
             root = new Distinct(base, projectlist, OpType.DISTINCT);
             Schema newSchema = base.getSchema();
             root.setSchema(newSchema);

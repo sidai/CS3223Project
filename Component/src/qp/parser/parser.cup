@@ -111,9 +111,17 @@ sqlquery ::= sqlquery:s GROUPBY attrlist:a
             RESULT=sq;
         :}
 
+        | SELECT DISTINCT STAR FROM tablelist:t
+        {:
+           Vector a= new Vector();
+           SQLQuery sq = new SQLQuery(a,t);
+           sq.setIsDistinct(true);
+           parser.query=sq;
+           RESULT=sq;
+        :}
+
         | SELECT DISTINCT attrlist:a FROM tablelist:t
         {:
-           Vector v1= new Vector();
            SQLQuery sq = new SQLQuery(a,t);
            sq.setIsDistinct(true);
            parser.query=sq;
@@ -136,9 +144,17 @@ sqlquery ::= sqlquery:s GROUPBY attrlist:a
             RESULT=sq;
 		:}
 
+		| SELECT DISTINCT STAR FROM tablelist:t WHERE conditionlist:c
+		{:
+             Vector a= new Vector();
+             SQLQuery sq = new SQLQuery(a,t,c);
+             sq.setIsDistinct(true);
+             parser.query=sq;
+             RESULT=sq;
+		:}
+
 		| SELECT DISTINCT attrlist:a FROM tablelist:t WHERE conditionlist:c
 		{:
-             Vector v1= new Vector();
              SQLQuery sq = new SQLQuery(a,t,c);
              sq.setIsDistinct(true);
              parser.query=sq;
